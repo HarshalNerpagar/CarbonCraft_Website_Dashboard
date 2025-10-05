@@ -1,0 +1,576 @@
+<div class="dashboard-main-body">
+    <div class="tw-flex tw-gap-5 lg:tw-flex-row tw-flex-col">
+        <div class="card h-100 p-0 radius-12 tw-w-full tw-shadow-lg">
+            <!-- Header Section with Business & Order Info -->
+            <div class="card-header tw-bg-gradient-to-r tw-from-gray-50 tw-to-gray-100 tw-border-b-2 tw-border-gray-200 py-20 px-28">
+                <div class="tw-flex tw-justify-between tw-items-start tw-flex-wrap tw-gap-6">
+                    <!-- Business Info -->
+                    <div class="tw-flex tw-flex-col">
+                        <div class="tw-flex tw-items-center tw-gap-3 tw-mb-3">
+                            <div class="tw-bg-primary-600 tw-text-white tw-p-2 tw-rounded-lg">
+                                <iconify-icon icon="mdi:store" class="tw-text-2xl"></iconify-icon>
+                            </div>
+                            <div class="tw-text-2xl tw-font-bold tw-text-gray-800">{{ $sitename }}</div>
+                        </div>
+                        <div class="tw-flex tw-flex-col tw-gap-1.5 tw-text-sm tw-text-gray-600 tw-ml-14">
+                            <div class="tw-flex tw-items-center tw-gap-2">
+                                <iconify-icon icon="mdi:phone" class="tw-text-primary-600"></iconify-icon>
+                                <span>{{$phone ? getCountryCode() : ''}}{{ (int)$phone }}</span>
+                            </div>
+                            <div class="tw-flex tw-items-center tw-gap-2">
+                                <iconify-icon icon="mdi:email" class="tw-text-primary-600"></iconify-icon>
+                                <span>{{ $store_email }}</span>
+                            </div>
+                            <div class="tw-flex tw-items-center tw-gap-2">
+                                <iconify-icon icon="mdi:map-marker" class="tw-text-primary-600"></iconify-icon>
+                                <span>{{ $address }} - {{ $zipcode }}</span>
+                            </div>
+                            <div class="tw-flex tw-items-center tw-gap-2 tw-mt-1">
+                                <iconify-icon icon="mdi:file-document" class="tw-text-primary-600"></iconify-icon>
+                                <span class="tw-font-medium">{{ $lang->data['tax'] ?? 'TAX' }}: {{ $tax_number }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Info -->
+                    <div class="tw-flex tw-flex-col tw-items-end tw-bg-white tw-rounded-xl tw-p-5 tw-shadow-md tw-border tw-border-gray-200">
+                        <div class="tw-flex tw-items-center tw-gap-2 tw-mb-4">
+                            <iconify-icon icon="mdi:receipt" class="tw-text-3xl tw-text-primary-600"></iconify-icon>
+                            <div class="tw-text-xl tw-font-bold tw-text-gray-800">#{{ $order->order_number }}</div>
+                        </div>
+                        <div class="tw-flex tw-flex-col tw-gap-2 tw-text-sm">
+                            <div class="tw-flex tw-items-center tw-gap-2 tw-text-gray-600">
+                                <iconify-icon icon="mdi:calendar-today" class="tw-text-blue-500"></iconify-icon>
+                                <span class="tw-font-medium">{{ $lang->data['order_date'] ?? 'Order Date' }}:</span>
+                                <span class="tw-font-bold tw-text-gray-800">{{ \Carbon\Carbon::parse($order->order_date)->format('d M Y') }}</span>
+                            </div>
+                            <div class="tw-flex tw-items-center tw-gap-2 tw-text-gray-600">
+                                <iconify-icon icon="mdi:calendar-check" class="tw-text-green-500"></iconify-icon>
+                                <span class="tw-font-medium">{{ $lang->data['delivery_date'] ?? 'Delivery Date' }}:</span>
+                                <span class="tw-font-bold tw-text-gray-800">{{ \Carbon\Carbon::parse($order->delivery_date)->format('d M Y') }}</span>
+                            </div>
+                            <div class="tw-flex tw-items-center tw-gap-2 tw-mt-2 tw-pt-2 tw-border-t tw-border-gray-200">
+                                <span class="tw-font-medium tw-text-gray-700">{{ $lang->data['order_status'] ?? 'Order Status' }}:</span>
+                                <div class="dropdown">
+                                    @can('order_status_change')
+                                    @if($order->status != 3 && $order->status != 4)
+                                    <button class="btn btn-sm btn-primary-600 dropdown-toggle tw-py-1.5 tw-px-3 tw-font-semibold" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        {{ getOrderStatus($order->status) }}
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900" href="#" wire:click.prevent="changeStatus(1)">{{ $lang->data['processing'] ?? 'Processing' }}</a></li>
+                                        <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900" href="#" wire:click.prevent="changeStatus(2)">{{ $lang->data['ready_to_deliver'] ?? 'Ready To Deliver' }}</a></li>
+                                        <li>
+                                            @if($balance > 0)
+                                            <button disabled class="dropdown-item px-16 py-8 rounded tw-text-neutral-400 disabled:tw-bg-transparent">
+                                                {{ $lang->data['delivered'] ?? 'Delivered' }} <span class="text-danger text-xs">({{ $lang->data['payment_incomplete'] ?? 'Payment Incomplete' }})</span>
+                                            </button>
+                                            @else
+                                            <button class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900" href="#" wire:click.prevent="changeStatus(3)">
+                                                {{ $lang->data['delivered'] ?? 'Delivered' }}
+                                            </button>
+                                            @endif
+                                        </li>
+                                        <li><a class="dropdown-item px-16 py-8 rounded text-secondary-light bg-hover-neutral-200 text-hover-neutral-900" href="#" wire:click.prevent="changeStatus(4)">{{ $lang->data['returned'] ?? 'Returned' }}</a></li>
+                                    </ul>
+                                    @else
+                                    @if($order->status == 4)
+                                    <span class="badge bg-danger-600 text-white px-3 py-2 tw-text-sm">
+                                        <iconify-icon icon="mdi:close-circle" class="tw-mr-1"></iconify-icon>
+                                        {{ $lang->data['returned'] ?? 'Returned' }}
+                                    </span>
+                                    @else
+                                    <span class="badge bg-success-600 text-white px-3 py-2 tw-text-sm">
+                                        <iconify-icon icon="mdi:check-circle" class="tw-mr-1"></iconify-icon>
+                                        {{ $lang->data['delivered'] ?? 'Delivered' }}
+                                    </span>
+                                    @endif
+                                    @endif
+                                    @endcan
+                                    @cannot('order_status_change')
+                                    <span class="badge bg-secondary-600 text-white px-3 py-2 tw-text-sm">
+                                        {{ getOrderStatus($order->status) }}
+                                    </span>
+                                    @endcannot
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-24">
+                <div class="table-responsive scroll-sm">
+                    <table class="table bordered-table sm-table mb-0">
+                      <thead>
+                        <tr>
+                          <th scope="col" class="">#</th>
+                          <th scope="col" class="">{{ $lang->data['service_name'] ?? 'Service Name' }}</th>
+                          <th scope="col" class=""> {{ $lang->data['color'] ?? 'Color' }}</th>
+                          <th scope="col" class="">{{ $lang->data['rate'] ?? 'Rate' }}</th>
+                          <th scope="col" class=""> {{ $lang->data['qty'] ?? 'QTY' }}</th>
+                          <th scope="col" class=""> {{ $lang->data['total'] ?? 'Total' }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @foreach ($orderdetails as $item)
+                            @php
+                                $service = \App\Models\Service::where('id', $item->service_id)->first();
+                            @endphp
+                            <tr class="tw-text-sm">
+                                <td>
+                                    {{ $loop->index + 1 }}
+                                </td>
+                                <td class="">
+                                    <div class="tw-flex tw-gap-4">
+                                        <div class="tw-size-10">
+                                            <img src="{{ asset('assets/img/service-icons/' . $service->icon) }}" class="tw-object-contain" alt="">
+                                        </div>
+                                        <div class="tw-flex tw-flex-col">
+                                            <p class="tw-text-black">{{ $service->service_name }}</p>
+                                            <p class="tw-text-gray-600 tw-text-xs">[{{$item->service_name}}]</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-primary">
+                                    @if($item->color_code!="")
+                                    <div class="tw-size-6 tw-rounded-lg" style="background-color: {{$item->color_code}}">
+                                    </div>
+
+                                    @else
+                                    <div class="tw-size-6 tw-rounded-lg tw-bg-white" >
+                                    </div>
+                                    @endif
+                                </td>
+                                <td class="text-primary">
+                                    {{ getFormattedCurrency($item->service_price) }}
+                                </td>
+                                <td>
+                                    {{ $item->service_quantity }}
+                                </td>
+                                <td class="text-primary">
+                                    {{ getFormattedCurrency($item->service_detail_total) }}
+                                </td>
+                               
+                            </tr>
+                            @endforeach
+                      </tbody>
+                    </table>
+                </div>
+
+                <!-- Invoice To & Payment Summary -->
+                <div class="tw-grid lg:tw-grid-cols-2 tw-grid-cols-1 tw-gap-8 tw-mt-8">
+                    <!-- Invoice To Section -->
+                    <div class="tw-bg-gradient-to-br tw-from-gray-50 tw-to-gray-100 tw-p-6 tw-rounded-xl tw-border tw-border-gray-200">
+                        <div class="tw-flex tw-items-center tw-gap-2 tw-mb-4">
+                            <iconify-icon icon="mdi:account-circle" class="tw-text-2xl tw-text-primary-600"></iconify-icon>
+                            <span class="tw-font-bold tw-text-gray-800 tw-text-lg">{{ $lang->data['invoice_to'] ?? 'Invoice To' }}</span>
+                        </div>
+                        <div class="tw-flex tw-flex-col tw-gap-2.5 tw-text-sm">
+                            <div class="tw-flex tw-items-center tw-gap-2">
+                                <iconify-icon icon="mdi:account" class="tw-text-blue-500"></iconify-icon>
+                                <span class="tw-font-semibold tw-text-gray-900">{{ $customer->name ?? 'Walk-In Customer' }}</span>
+                            </div>
+                            <div class="tw-flex tw-items-center tw-gap-2">
+                                <iconify-icon icon="mdi:phone" class="tw-text-green-500"></iconify-icon>
+                                <span class="tw-text-gray-700">{{$customer && $customer->phone ? getCountryCode() : ''}} {{  $customer && $customer->phone ?  (int)$customer->phone : 'Phone' }}</span>
+                            </div>
+                            <div class="tw-flex tw-items-center tw-gap-2">
+                                <iconify-icon icon="mdi:email" class="tw-text-orange-500"></iconify-icon>
+                                <span class="tw-text-gray-700">{{ $customer->email ?? 'Email' }}</span>
+                            </div>
+                            @if($customer && $customer->address)
+                            <div class="tw-flex tw-items-start tw-gap-2">
+                                <iconify-icon icon="mdi:map-marker" class="tw-text-red-500 tw-mt-0.5"></iconify-icon>
+                                <span class="tw-text-gray-700">{{ $customer->address }}</span>
+                            </div>
+                            @endif
+                            <div class="tw-flex tw-items-center tw-gap-2 tw-mt-2 tw-pt-2 tw-border-t tw-border-gray-300">
+                                <iconify-icon icon="mdi:file-document" class="tw-text-purple-500"></iconify-icon>
+                                <span class="tw-text-gray-700"><span class="tw-font-medium">{{ $lang->data['vat'] ?? 'VAT' }}:</span> {{ $customer->tax_number ?? 'TAX' }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Details Section -->
+                    <div class="tw-bg-gradient-to-br tw-from-primary-50 tw-to-blue-50 tw-p-6 tw-rounded-xl tw-border tw-border-primary-200">
+                        <div class="tw-flex tw-items-center tw-gap-2 tw-mb-4">
+                            <iconify-icon icon="mdi:cash-multiple" class="tw-text-2xl tw-text-primary-600"></iconify-icon>
+                            <span class="tw-font-bold tw-text-gray-800 tw-text-lg">{{ $lang->data['payment_details'] ?? 'Payment Details' }}</span>
+                        </div>
+                        <div class="tw-flex tw-flex-col tw-gap-3">
+                            <div class="tw-flex tw-justify-between tw-items-center tw-text-sm">
+                                <span class="tw-text-gray-600">{{ $lang->data['sub_total'] ?? 'Sub Total' }}</span>
+                                <span class="tw-font-semibold tw-text-gray-900">{{ getFormattedCurrency($order->sub_total) }}</span>
+                            </div>
+                            <div class="tw-flex tw-justify-between tw-items-center tw-text-sm">
+                                <span class="tw-text-gray-600">{{ $lang->data['addon'] ?? 'Addon' }}</span>
+                                <span class="tw-font-semibold tw-text-gray-900">{{ getFormattedCurrency($order->addon_total) }}</span>
+                            </div>
+                            <div class="tw-flex tw-justify-between tw-items-center tw-text-sm">
+                                <span class="tw-text-gray-600">{{ $lang->data['discount'] ?? 'Discount' }}</span>
+                                <span class="tw-font-semibold tw-text-red-600">-{{ getFormattedCurrency($order->discount) }}</span>
+                            </div>
+                            <div class="tw-flex tw-justify-between tw-items-center tw-text-sm tw-pb-3 tw-border-b tw-border-primary-200">
+                                <span class="tw-text-gray-600">{{ $lang->data['tax'] ?? 'Tax' }} ({{ $order->tax_percentage }}%)</span>
+                                <span class="tw-font-semibold tw-text-gray-900">{{ getFormattedCurrency($order->tax_amount) }}</span>
+                            </div>
+                            <div class="tw-flex tw-justify-between tw-items-center tw-bg-primary-600 tw-text-white tw-p-4 tw-rounded-lg tw-shadow-md">
+                                <span class="tw-font-bold tw-text-base">{{ $lang->data['gross_total'] ?? 'Gross Total' }}</span>
+                                <span class="tw-font-bold tw-text-xl">{{ getFormattedCurrency($order->total) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes Section -->
+                @if($order->note)
+                <div class="tw-mt-6 tw-bg-amber-50 tw-border-l-4 tw-border-amber-400 tw-p-5 tw-rounded-r-lg">
+                    <div class="tw-flex tw-items-start tw-gap-3">
+                        <iconify-icon icon="mdi:note-text" class="tw-text-2xl tw-text-amber-600 tw-mt-0.5"></iconify-icon>
+                        <div class="tw-flex tw-flex-col">
+                            <div class="tw-font-bold tw-text-gray-800 tw-mb-2">{{ $lang->data['notes'] ?? 'Notes' }}</div>
+                            <div class="tw-text-gray-700 tw-text-sm tw-leading-relaxed">{{ $order->note }}</div>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+                    @if($order->order_source === 'online')
+                    <hr class="tw-mt-6 tw-border-t-2 tw-border-dashed tw-border-gray-200">
+
+                    <!-- Website Order Section -->
+                    <div class="tw-mt-6 tw-bg-gradient-to-br tw-from-blue-50 tw-to-indigo-50 tw-p-5 tw-rounded-xl tw-border tw-border-blue-100">
+                        <div class="tw-flex tw-items-center tw-gap-3 tw-mb-5">
+                            <div class="tw-bg-blue-500 tw-text-white tw-p-2 tw-rounded-lg">
+                                <iconify-icon icon="mdi:web" class="tw-text-2xl"></iconify-icon>
+                            </div>
+                            <div class="tw-flex tw-flex-col">
+                                <div class="tw-text-lg tw-font-bold tw-text-gray-800">Website Order - Customization Details</div>
+                                <div class="tw-text-xs tw-text-gray-600 tw-flex tw-items-center tw-gap-1 tw-mt-1">
+                                    <iconify-icon icon="mdi:information-outline" class="tw-text-sm"></iconify-icon>
+                                    Order placed through online store
+                                </div>
+                            </div>
+                        </div>
+
+                        @php
+                            $customization = json_decode($order->customization_data, true);
+                        @endphp
+
+                        <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-gap-4">
+                            @if(isset($customization['service']))
+                            <div class="tw-bg-white tw-p-4 tw-rounded-lg tw-shadow-sm tw-border tw-border-gray-100">
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-mb-2">
+                                    <iconify-icon icon="mdi:briefcase-variant" class="tw-text-purple-500"></iconify-icon>
+                                    <div class="tw-text-xs tw-font-semibold tw-text-gray-500 tw-uppercase tw-tracking-wide">Service Type</div>
+                                </div>
+                                <div class="tw-font-bold tw-text-gray-900 tw-capitalize tw-text-base">
+                                    {{ $customization['service'] === 'diy' ? 'DIY Service' : 'Full Service' }}
+                                </div>
+                            </div>
+                            @endif
+
+                            @if(isset($customization['selectedColor']))
+                            <div class="tw-bg-white tw-p-4 tw-rounded-lg tw-shadow-sm tw-border tw-border-gray-100">
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-mb-2">
+                                    <iconify-icon icon="mdi:palette" class="tw-text-amber-500"></iconify-icon>
+                                    <div class="tw-text-xs tw-font-semibold tw-text-gray-500 tw-uppercase tw-tracking-wide">Metal Finish</div>
+                                </div>
+                                <div class="tw-font-bold tw-text-gray-900 tw-capitalize tw-text-base">
+                                    {{ str_replace('-', ' ', $customization['selectedColor']) }}
+                                </div>
+                            </div>
+                            @endif
+
+                            @if(isset($customization['namePosition']))
+                            <div class="tw-bg-white tw-p-4 tw-rounded-lg tw-shadow-sm tw-border tw-border-gray-100">
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-mb-2">
+                                    <iconify-icon icon="mdi:card-text" class="tw-text-green-500"></iconify-icon>
+                                    <div class="tw-text-xs tw-font-semibold tw-text-gray-500 tw-uppercase tw-tracking-wide">Name Position</div>
+                                </div>
+                                <div class="tw-font-bold tw-text-gray-900 tw-capitalize tw-text-base">
+                                    {{ $customization['namePosition'] }}
+                                </div>
+                            </div>
+                            @endif
+
+                            @if(isset($customization['paymentOption']))
+                            <div class="tw-bg-white tw-p-4 tw-rounded-lg tw-shadow-sm tw-border tw-border-gray-100">
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-mb-2">
+                                    <iconify-icon icon="mdi:cash-multiple" class="tw-text-blue-500"></iconify-icon>
+                                    <div class="tw-text-xs tw-font-semibold tw-text-gray-500 tw-uppercase tw-tracking-wide">Payment Method</div>
+                                </div>
+                                <div class="tw-font-bold tw-text-gray-900 tw-capitalize tw-text-base">
+                                    {{ str_replace('-', ' ', $customization['paymentOption']) }}
+                                </div>
+                            </div>
+                            @endif
+
+                            @if(isset($customization['needsPickup']) && $customization['needsPickup'])
+                            <div class="tw-bg-green-50 tw-p-4 tw-rounded-lg tw-shadow-sm tw-border tw-border-green-200 md:tw-col-span-2">
+                                <div class="tw-flex tw-items-center tw-gap-2">
+                                    <iconify-icon icon="mdi:truck-delivery" class="tw-text-green-600 tw-text-xl"></iconify-icon>
+                                    <div class="tw-font-bold tw-text-green-700">Pickup Service Requested</div>
+                                    <div class="tw-ml-auto tw-bg-green-600 tw-text-white tw-px-3 tw-py-1 tw-rounded-full tw-text-sm tw-font-semibold">+₹350</div>
+                                </div>
+                            </div>
+                            @endif
+
+                            @if(isset($customization['requirements']) && $customization['requirements'])
+                            <div class="tw-bg-white tw-p-4 tw-rounded-lg tw-shadow-sm tw-border tw-border-gray-100 md:tw-col-span-2">
+                                <div class="tw-flex tw-items-center tw-gap-2 tw-mb-2">
+                                    <iconify-icon icon="mdi:note-text" class="tw-text-orange-500"></iconify-icon>
+                                    <div class="tw-text-xs tw-font-semibold tw-text-gray-500 tw-uppercase tw-tracking-wide">Custom Requirements</div>
+                                </div>
+                                <div class="tw-text-gray-700 tw-leading-relaxed tw-bg-gray-50 tw-p-3 tw-rounded tw-border-l-4 tw-border-orange-400">
+                                    {{ $customization['requirements'] }}
+                                </div>
+                            </div>
+                            @endif
+                        </div>
+
+                        @if($order->razorpay_payment_id)
+                        <div class="tw-mt-5 tw-bg-white tw-border-2 tw-border-blue-200 tw-p-4 tw-rounded-xl tw-shadow-md">
+                            <div class="tw-flex tw-items-center tw-gap-3 tw-mb-4">
+                                <div class="tw-bg-blue-500 tw-text-white tw-p-2 tw-rounded-lg">
+                                    <iconify-icon icon="mdi:credit-card-check" class="tw-text-xl"></iconify-icon>
+                                </div>
+                                <div class="tw-font-bold tw-text-blue-800 tw-text-base">Razorpay Payment Details</div>
+                            </div>
+                            <div class="tw-grid tw-grid-cols-1 tw-gap-3 tw-bg-blue-50 tw-p-4 tw-rounded-lg">
+                                <div class="tw-flex tw-justify-between tw-items-center tw-pb-2 tw-border-b tw-border-blue-200">
+                                    <span class="tw-text-gray-600 tw-font-medium tw-text-sm">Payment ID</span>
+                                    <span class="tw-font-mono tw-text-gray-900 tw-font-semibold tw-text-sm">{{ $order->razorpay_payment_id }}</span>
+                                </div>
+                                @if($order->razorpay_order_id)
+                                <div class="tw-flex tw-justify-between tw-items-center tw-pb-2 tw-border-b tw-border-blue-200">
+                                    <span class="tw-text-gray-600 tw-font-medium tw-text-sm">Order ID</span>
+                                    <span class="tw-font-mono tw-text-gray-900 tw-font-semibold tw-text-sm">{{ $order->razorpay_order_id }}</span>
+                                </div>
+                                @endif
+                                @if($order->payment_method_type)
+                                <div class="tw-flex tw-justify-between tw-items-center">
+                                    <span class="tw-text-gray-600 tw-font-medium tw-text-sm">Payment Type</span>
+                                    <span class="tw-bg-blue-600 tw-text-white tw-px-3 tw-py-1 tw-rounded-full tw-text-xs tw-font-bold tw-capitalize">
+                                        {{ str_replace('-', ' ', $order->payment_method_type) }}
+                                    </span>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="card h-100 p-0 radius-12 lg:tw-w-[26rem] tw-w-full tw-shrink-0 tw-shadow-lg">
+            <div class="card-body p-24">
+                <!-- Service Addons Section -->
+                @if ($orderaddons && count($orderaddons) > 0)
+                <div class="tw-mb-6">
+                    <div class="tw-flex tw-items-center tw-gap-2 tw-mb-4">
+                        <iconify-icon icon="mdi:puzzle" class="tw-text-2xl tw-text-success-600"></iconify-icon>
+                        <span class="tw-text-lg tw-font-bold tw-text-gray-800">{{ $lang->data['service_addons'] ?? 'Service Addons' }}</span>
+                    </div>
+                    <div class="tw-space-y-3">
+                        @foreach ($orderaddons as $item)
+                        <div class="tw-bg-gradient-to-r tw-from-green-50 tw-to-emerald-50 tw-p-4 tw-rounded-lg tw-border tw-border-green-200 tw-shadow-sm">
+                            <div class="tw-flex tw-items-center tw-justify-between">
+                                <div class="tw-flex tw-items-center tw-gap-3">
+                                    <div class="tw-bg-success-600 tw-text-white tw-p-2 tw-rounded-lg">
+                                        <iconify-icon icon="mdi:check" class="tw-text-lg"></iconify-icon>
+                                    </div>
+                                    <div class="tw-flex tw-flex-col">
+                                        <div class="tw-font-semibold tw-text-gray-900">{{ $item->addon_name }}</div>
+                                        <div class="tw-text-success-600 tw-font-bold tw-text-sm">{{ getFormattedCurrency($item->addon_price) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                </div>
+                <hr class="tw-border-gray-200">
+                @endif
+
+                <!-- Payments Section -->
+                @can('payment_create')
+                <div class="tw-mt-6">
+                    <div class="tw-flex tw-items-center tw-gap-2 tw-mb-4">
+                        <iconify-icon icon="mdi:wallet" class="tw-text-2xl tw-text-primary-600"></iconify-icon>
+                        <span class="tw-text-lg tw-font-bold tw-text-gray-800">{{ $lang->data['payments'] ?? 'Payments' }}</span>
+                    </div>
+
+                    @if(count($payments) > 0)
+                    <div class="tw-relative tw-space-y-4 tw-mb-6">
+                        @foreach ($payments as $item)
+                        <div class="tw-flex tw-items-start tw-gap-4">
+                            <div class="tw-relative tw-flex tw-flex-col tw-items-center">
+                                <div class="tw-bg-primary-600 tw-text-white tw-p-2 tw-rounded-full tw-shadow-md">
+                                    <iconify-icon icon="mdi:cash" class="tw-text-lg"></iconify-icon>
+                                </div>
+                                @if(!$loop->last)
+                                <div class="tw-w-0.5 tw-h-12 tw-bg-gray-300 tw-mt-2"></div>
+                                @endif
+                            </div>
+                            <div class="tw-flex-1 tw-bg-gradient-to-r tw-from-blue-50 tw-to-indigo-50 tw-p-4 tw-rounded-lg tw-border tw-border-blue-200 tw-shadow-sm">
+                                <div class="tw-flex tw-justify-between tw-items-center">
+                                    <div class="tw-flex tw-flex-col">
+                                        <div class="tw-font-bold tw-text-gray-900 tw-text-lg">{{ getFormattedCurrency($item->received_amount) }}</div>
+                                        <div class="tw-text-xs tw-text-gray-600 tw-mt-1">
+                                            <iconify-icon icon="mdi:calendar" class="tw-text-sm"></iconify-icon>
+                                            {{ Carbon\Carbon::parse($item->payment_date)->format('d M Y') }}
+                                        </div>
+                                    </div>
+                                    <div class="tw-bg-primary-600 tw-text-white tw-px-3 tw-py-1 tw-rounded-full tw-text-xs tw-font-bold">
+                                        {{ getpaymentMode($item->payment_type) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+                    @else
+                    <div class="tw-text-center tw-py-8 tw-text-gray-500">
+                        <iconify-icon icon="mdi:cash-remove" class="tw-text-5xl tw-mb-2 tw-text-gray-300"></iconify-icon>
+                        <p class="tw-text-sm">No payments recorded yet</p>
+                    </div>
+                    @endif
+
+                    <!-- Payment Action Buttons -->
+                    <div class="tw-space-y-3">
+                        @if ($balance > 0)
+                            @if($order->status != 4)
+                            <button data-bs-toggle="modal" data-bs-target="#exampleModal" type="button" class="btn btn-success-600 radius-8 px-20 py-12 tw-w-full tw-font-semibold tw-shadow-md hover:tw-shadow-lg tw-transition">
+                                <iconify-icon icon="mdi:plus-circle" class="tw-mr-2"></iconify-icon>
+                                {{ $lang->data['add_payment'] ?? 'Add Payment' }}
+                            </button>
+                            @endif
+                        @else
+                        <button type="button" class="btn btn-success-600 radius-8 px-20 py-12 tw-w-full tw-font-semibold" disabled>
+                            <iconify-icon icon="mdi:check-circle" class="tw-mr-2"></iconify-icon>
+                            {{ $lang->data['fully_paid'] ?? 'Fully Paid' }}
+                        </button>
+                        @endif
+
+                        @can('order_print')
+                        <a href="{{url('admin/orders/print/'.$order->id)}}" target="_blank" type="button" class="btn btn-warning-600 radius-8 px-20 py-12 tw-w-full tw-font-semibold tw-shadow-md hover:tw-shadow-lg tw-transition">
+                            <iconify-icon icon="mdi:printer" class="tw-mr-2"></iconify-icon>
+                            {{ $lang->data['print_invoice'] ?? 'Print Invoice' }}
+                        </a>
+                        @endcan
+                    </div>
+                </div>
+                @endcan
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true" wire:ignore.self>
+        <div class="modal-dialog modal-md modal-dialog modal-dialog-centered">
+            <div class="modal-content radius-16 bg-base">
+                <div class="modal-header py-16 px-24 border border-top-0 border-start-0 border-end-0">
+                    <h1 class="modal-title text-md" id="exampleModalLabel">{{ $lang->data['payment_details'] ?? 'Payment Details' }}</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                @if ($order)
+                    <div class="modal-body p-24">
+                        <form action="#">
+                            <div class="row">   
+                                <div class="col-12">
+                                    <div class="">
+                                        <ul>
+                                            <li class="d-flex align-items-center gap-1 mb-12 tw-justify-between tw-w-full">
+                                                <span class="text-md fw-semibold text-primary-light">{{ $lang->data['customer'] ?? 'Customer' }} :</span>
+                                                <span class="text-secondary-light fw-medium">{{ $customer->name ?? '' }}</span>
+                                            </li>
+                                            <li class="d-flex align-items-center gap-1 mb-12 tw-justify-between ">
+                                                <span class="text-md fw-semibold text-primary-light"> {{ $lang->data['order_id'] ?? 'Order ID' }} :</span>
+                                                <span class="text-secondary-light fw-medium">{{ $order->order_number }}</span>
+                                            </li>
+                                            <li class="d-flex align-items-center gap-1 mb-12 tw-justify-between">
+                                                <span class="text-md fw-semibold text-primary-light">  {{ $lang->data['order_date'] ?? 'Order Date' }} :</span>
+                                                <span class="text-secondary-light fw-medium">{{ \Carbon\Carbon::parse($order->order_date)->format('d/m/Y') }}</span>
+                                            </li>
+                                            <li class="d-flex align-items-center gap-1 mb-12 tw-justify-between">
+                                                <span class="text-md fw-semibold text-primary-light">  {{ $lang->data['delivery_date'] ?? 'Delivery Date' }} :</span>
+                                                <span class="text-secondary-light fw-medium">{{ \Carbon\Carbon::parse($order->delivery_date)->format('d/m/Y') }}</span>
+                                            </li>
+                                            <li class="d-flex align-items-center gap-1 mb-12 tw-justify-between">
+                                                <span class="text-md fw-semibold text-primary-light"> {{ $lang->data['order_amount'] ?? 'Order Amount' }} :</span>
+                                                <span class="text-secondary-light fw-medium"> {{ getFormattedCurrency($order->total) }}</span>
+                                            </li>
+                                            <li class="d-flex align-items-center gap-1 mb-12 tw-justify-between">
+                                                <span class="text-md fw-semibold text-primary-light"> {{ $lang->data['paid_amount'] ?? 'Paid Amount' }} :</span>
+                                                <span class="text-secondary-light fw-medium"> {{ getFormattedCurrency($paid_amount) }}</span>
+                                            </li>
+                                            <li class="d-flex align-items-center gap-1 tw-justify-between">
+                                                <span class="text-md fw-semibold text-primary-light"> {{ $lang->data['balance'] ?? 'Balance' }} :</span>
+                                                <span class="text-secondary-light fw-medium"> {{ getFormattedCurrency($order->total - $paid_amount) }}</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="col-12 tw-my-6">
+                                    <hr>
+                                </div>
+                                <div class="col-12 mb-20 ">
+                                    <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">{{ $lang->data['paid_amount'] ?? 'Paid Amount' }} <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control radius-8" placeholder="{{ $lang->data['enter_amount'] ?? 'Enter Amount' }}" wire:model="paid_amount" >
+                                    @error('balance')
+                                        <span class="error text-danger">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                                <div class="col-12 mb-20 ">
+                                    <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">{{ $lang->data['payment_type'] ?? 'Payment Type' }} <span class="text-danger">*</span></label>
+                                    <select  class="form-select radius-8" wire:model="payment_type">
+                                        <option value="">
+                                            {{ $lang->data['choose_payment_type'] ?? 'Choose Payment Type' }}
+                                        </option>
+                                        <option class="select-box" value="1">
+                                            {{ $lang->data['cash'] ?? 'Cash' }}
+                                        </option>
+                                        <option class="select-box" value="2">
+                                            {{ $lang->data['upi'] ?? 'UPI' }}
+                                        </option>
+                                        <option class="select-box" value="3">
+                                            {{ $lang->data['card'] ?? 'Card' }}
+                                        </option>
+                                        <option class="select-box" value="4">
+                                            {{ $lang->data['cheque'] ?? 'Cheque' }}
+                                        </option>
+                                        <option class="select-box" value="5">
+                                            {{ $lang->data['bank_transfer'] ?? 'Bank Transfer' }}
+                                        </option>
+                                    </select>
+                                    @error('payment_type')
+                                    <span class="error text-danger">{{ $message }}</span>
+                                    @enderror
+                                </div>
+
+                                <div class="col-12 mb-20">
+                                    <label for="name" class="form-label fw-semibold text-primary-light text-sm mb-8">{{ $lang->data['notes'] ?? 'Notes' }} </label>
+                                    <textarea class="form-control radius-8" placeholder="{{ $lang->data['enter_notes'] ?? 'Enter Notes' }}"  wire:model="notes"></textarea>
+                                    @error('notes')
+                                        <span class="error text-danger">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                                <div class="d-flex align-items-start justify-content-end gap-3 mt-24">
+                                    <button data-bs-dismiss="modal" type="button" class="border border-danger-600 bg-hover-danger-200 text-danger-600 text-md px-40 py-11 radius-8"> 
+                                    {{ $lang->data['cancel'] ?? 'Cancel' }}
+                                    </button>
+                                    <button wire:click.prevent="addPayment" class="btn btn-primary border border-primary-600 text-md px-24 py-12 radius-8"> 
+                                    {{ $lang->data['save'] ?? 'Save' }}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
