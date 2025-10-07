@@ -46,35 +46,6 @@ class OrderApiController extends Controller
                 ]
             );
 
-            // Find product - try multiple methods
-            $product = null;
-
-            // Try to find by mongodb_id first
-            if (isset($validated['product']['_id'])) {
-                $product = Product::where('mongodb_id', $validated['product']['_id'])->first();
-            }
-
-            // If not found, try by name or slug
-            if (!$product && isset($validated['product']['name'])) {
-                $product = Product::where('name', $validated['product']['name'])
-                                 ->orWhere('slug', $validated['product']['slug'] ?? '')
-                                 ->orWhere('display_name', $validated['product']['displayName'] ?? '')
-                                 ->first();
-            }
-
-            // If still not found, use first Metal Card product as fallback
-            if (!$product) {
-                $product = Product::where('category', 'Metal Card')->first();
-                \Log::warning('Product not found, using fallback product', [
-                    'requested_product' => $validated['product'],
-                    'fallback_product_id' => $product?->id
-                ]);
-            }
-
-            if (!$product) {
-                throw new \Exception('No products available in database. Please seed products first.');
-            }
-
             // Calculate delivery date
             $deliveryDays = $validated['service'] === 'diy' ? 5 : 12;
             $deliveryDate = now()->addDays($deliveryDays);
@@ -110,7 +81,7 @@ class OrderApiController extends Controller
             ]);
 
             // Determine service_id based on service type
-            $serviceId = $validated['service'] === 'diy' ? 3 : 4; // 3 = DIY, 4 = Full Service
+            $serviceId = $validated['service'] === 'diy' ? 1 : 2; // 1 = DIY, 2 = Full Service
 
             // Create order details
             OrderDetail::create([
@@ -229,9 +200,38 @@ class OrderApiController extends Controller
 
     private function generateOrderNumber()
     {
-        $year = date('Y');
-        $lastOrder = Order::whereYear('created_at', $year)->orderBy('id', 'desc')->first();
-        $number = $lastOrder ? intval(substr($lastOrder->order_number, -4)) + 1 : 1;
-        return 'CC-' . $year . '-' . str_pad($number, 4, '0', STR_PAD_LEFT);
+        // Format: CC-[day]-[month]-[year]-[order_number]-[4_random_letters]
+        // Example: CC-07-10-2025-0012-ABCD
+
+        $day = date('d');    // 07
+        $month = date('m');  // 10
+        $year = date('Y');   // 2025
+
+        // Get last order number for today
+        $today = date('Y-m-d');
+        $lastOrder = Order::whereDate('created_at', $today)->orderBy('id', 'desc')->first();
+
+        // Extract order number from last order or start at 1
+        if ($lastOrder) {
+            // Order format: CC-07-10-2025-0012-ABCD
+            // Extract the number part (0012)
+            $parts = explode('-', $lastOrder->order_number);
+            $number = isset($parts[4]) ? intval($parts[4]) + 1 : 1;
+        } else {
+            $number = 1;
+        }
+
+        // Generate 4 random uppercase letters
+        $randomLetters = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 4));
+
+        // Format: CC-DD-MM-YYYY-NNNN-XXXX
+        return sprintf(
+            'CC-%s-%s-%s-%s-%s',
+            $day,
+            $month,
+            $year,
+            str_pad($number, 4, '0', STR_PAD_LEFT),
+            $randomLetters
+        );
     }
 }

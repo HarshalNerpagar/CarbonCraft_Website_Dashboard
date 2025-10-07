@@ -30,105 +30,142 @@
                   </thead>
                   <tbody>
                         @foreach ($orders as $item)
-                        <tr class="tw-text-xs">
+                        <tr class="tw-text-xs smooth-transition hover:tw-bg-gray-50">
                             <td>
-                                <div class="tw-flex tw-flex-col">
-                                    <div class="text-neutral-600">
-                                        {{ $lang->data['order_id'] ?? 'Order ID' }} : <span class="tw-font-medium text-primary-light">{{ $item->order_number }}</span> 
+                                <div class="tw-flex tw-flex-col tw-gap-1">
+                                    <div class="tw-flex tw-items-center tw-gap-2">
+                                        <iconify-icon icon="mdi:receipt-text-outline" class="tw-text-primary tw-text-base"></iconify-icon>
+                                        <span class="tw-font-bold text-primary tw-text-sm">{{ $item->order_number }}</span>
                                     </div>
-                                    <div class="text-neutral-600">
-                                        {{ $lang->data['order_date'] ?? 'Order Date' }} : <span class="tw-font-medium text-primary-light">{{ \Carbon\Carbon::parse($item->order_date)->format('d/m/y') }}</span> 
+                                    <div class="tw-flex tw-items-center tw-gap-2 tw-text-neutral-600">
+                                        <iconify-icon icon="solar:calendar-outline" class="tw-text-xs"></iconify-icon>
+                                        <span class="tw-text-xs">{{ \Carbon\Carbon::parse($item->order_date)->format('d/m/y') }}</span>
                                     </div>
-                                    <div class="text-neutral-600">
-                                        {{ $lang->data['delivery_date'] ?? 'Delivery Date' }} : <span class="tw-font-medium text-primary-light">{{ \Carbon\Carbon::parse($item->delivery_date)->format('d/m/y') }}</span> 
+                                    <div class="tw-flex tw-items-center tw-gap-2 tw-text-neutral-600">
+                                        <iconify-icon icon="solar:delivery-outline" class="tw-text-xs"></iconify-icon>
+                                        <span class="tw-text-xs">{{ \Carbon\Carbon::parse($item->delivery_date)->format('d/m/y') }}</span>
                                     </div>
                                 </div>
                             </td>
-                            <td class="">
-                                <p>{{ $item->customer_name ?? ($lang->data['walk_in_customer'] ?? 'Walk In Customer') }}</p>
-                                <p>{{$item->phone_number ? getCountryCode() : ''}}{{$item->phone_number ? (int)$item->phone_number : ''}}</p>
+                            <td>
+                                <div class="tw-flex tw-flex-col">
+                                    <p class="tw-font-semibold tw-text-gray-800 tw-mb-1">
+                                        {{ $item->customer_name ?? ($lang->data['walk_in_customer'] ?? 'Walk In Customer') }}
+                                    </p>
+                                    @if($item->phone_number)
+                                    <p class="tw-text-gray-600 tw-flex tw-items-center tw-gap-1">
+                                        <iconify-icon icon="ph:phone" class="tw-text-xs"></iconify-icon>
+                                        {{getCountryCode()}}{{(int)$item->phone_number}}
+                                    </p>
+                                    @endif
+                                </div>
                             </td>
                             <td class="text-primary">
-                                {{ getFormattedCurrency($item->total) }}
-                            </td>
-                            <td class="">
-                                @if ($item->status == 0)
-                                <span class="badge  fw-semibold text-neutral-600 bg-neutral-200 px-20 py-9 radius-4 text-white">
-                                    {{ $lang->data['pending'] ?? 'Pending' }}
-                                </span>
-                                @elseif($item->status == 1)
-                                <span class="badge  fw-semibold text-warning-600 bg-warning-100 px-20 py-9 radius-4 text-white">
-                                    {{ $lang->data['processing'] ?? 'Processing' }}
-                                </span>
-                                @elseif($item->status ==2)
-                                <span class="badge  fw-semibold text-info-600 bg-info-100 px-20 py-9 radius-4 text-white">
-                                    {{ $lang->data['ready_to_deliver'] ?? 'Ready To Deliver' }}
-                                </span>
-                                @elseif($item->status == 3)
-                                <span class="badge  fw-semibold text-success-600 bg-success-100 px-20 py-9 radius-4 text-white">
-                                    {{ $lang->data['delivered'] ?? 'Delivered' }}
-                                </span>
-                                @elseif($item->status == 4)
-                                <span class="badge  fw-semibold text-danger-600 bg-danger-100 px-20 py-9 radius-4 text-white">
-                                    {{ $lang->data['returned'] ?? 'Returned' }}
-                                </span>
-                                @endif
+                                <span class="tw-font-bold tw-text-base">{{ getFormattedCurrency($item->total) }}</span>
                             </td>
                             <td>
                                 @php
-                                $paidamount = \App\Models\Payment::where('order_id', $item->id)->sum('received_amount');
+                                    $statusConfig = match($item->status) {
+                                        0 => ['text' => $lang->data['advance_done'] ?? 'Advance Done', 'class' => 'text-cyan-600 bg-cyan-100', 'icon' => 'solar:cart-check-outline'],
+                                        1 => ['text' => $lang->data['design_ready'] ?? 'Design Ready', 'class' => 'text-purple-600 bg-purple-100', 'icon' => 'solar:document-text-outline'],
+                                        2 => ['text' => $lang->data['ready_to_deliver'] ?? 'Ready To Deliver', 'class' => 'text-blue-600 bg-blue-100', 'icon' => 'solar:box-outline'],
+                                        3 => ['text' => $lang->data['delivered'] ?? 'Delivered Orders', 'class' => 'text-success-600 bg-success-100', 'icon' => 'solar:check-circle-outline'],
+                                        4 => ['text' => $lang->data['returned'] ?? 'Returned', 'class' => 'text-danger-600 bg-danger-100', 'icon' => 'solar:close-circle-outline'],
+                                        default => ['text' => 'Unknown', 'class' => 'text-gray-600 bg-gray-100', 'icon' => 'solar:question-circle-outline']
+                                    };
                                 @endphp
-                                <div class="tw-flex tw-flex-col">
-                                    <div class="text-neutral-600">
-                                        {{ $lang->data['total_amount'] ?? 'Total Amount' }} : <span class="tw-font-medium text-primary-light">{{ getFormattedCurrency($item->total) }}</span> 
+                                <span class="badge {{ $statusConfig['class'] }} status-badge tw-flex tw-items-center tw-gap-1 tw-w-fit">
+                                    <iconify-icon icon="{{ $statusConfig['icon'] }}" class="tw-text-sm"></iconify-icon>
+                                    {{ $statusConfig['text'] }}
+                                </span>
+                            </td>
+                            <td>
+                                @php
+                                // Use preloaded payment sum to avoid N+1 queries
+                                $paidamount = $item->paid_amount ?? 0;
+                                $paymentPercentage = $item->total > 0 ? ($paidamount / $item->total) * 100 : 0;
+                                @endphp
+                                <div class="tw-flex tw-flex-col tw-gap-2">
+                                    <div class="tw-flex tw-items-center tw-justify-between tw-gap-2">
+                                        <span class="tw-text-xs tw-text-gray-600">Paid:</span>
+                                        <span class="tw-font-bold tw-text-sm text-success-600">{{ getFormattedCurrency($paidamount) }}</span>
                                     </div>
-                                    <div class="text-neutral-600">
-                                        @php
-                                        $current_paid_amount = \App\Models\Payment::where('order_id',$item->id)->sum('received_amount');
-                                        @endphp
-                                        {{ $lang->data['paid_amount'] ?? 'Paid Amount' }} : <span class="tw-font-medium text-primary-light"> {{ getFormattedCurrency($current_paid_amount) }}</span> 
+                                    <div class="tw-flex tw-items-center tw-justify-between tw-gap-2">
+                                        <span class="tw-text-xs tw-text-gray-600">Balance:</span>
+                                        <span class="tw-font-bold tw-text-sm text-danger-600">{{ getFormattedCurrency($item->total - $paidamount) }}</span>
                                     </div>
-                                    @if ($paidamount < $item->total)
-                                        @if($item->status != 4)
-                                        @can('payment_create')
-                                            <div class="tw-mt-1">
-                                                <button type="button" class="btn rounded-pill btn-success-100 text-success-600 radius-8 tw-text-xs tw-py-1 tw-px-2 " data-bs-toggle="modal" data-bs-target="#exampleModal" wire:click="payment({{ $item->id }})">{{ $lang->data['add_payment'] ?? 'Add Payment' }}</button>
-                                            </div>
-                                        @endcan
-                                        @endif
-                                    @else
-                                    @if($item->status != 4)
-                                    <div class="tw-mt-1">
-                                        <button type="button" class="btn rounded-pill btn-neutral-300 text-neutral-600 radius-8 tw-text-xs tw-py-1 tw-px-2 " >{{ $lang->data['fully_paid'] ?? 'Fully Paid' }}</button>
-                                    </div>
-                                    @endif
-                                    @endif
 
+                                    <!-- Payment Progress Bar -->
+                                    <div class="tw-w-full tw-h-1.5 tw-bg-gray-200 tw-rounded-full tw-overflow-hidden">
+                                        <div class="tw-h-full tw-bg-success-600 smooth-transition" style="width: {{ $paymentPercentage }}%"></div>
+                                    </div>
+
+                                    @if ($paidamount < $item->total && $item->status != 4)
+                                        @can('payment_create')
+                                            <button type="button"
+                                                    class="btn btn-sm rounded-pill btn-success-100 text-success-600 radius-8 tw-text-xs tw-py-1 tw-px-3 smooth-transition hover:tw-scale-105"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#exampleModal"
+                                                    wire:click="payment({{ $item->id }})">
+                                                <iconify-icon icon="solar:wallet-money-outline" class="tw-mr-1"></iconify-icon>
+                                                {{ $lang->data['add_payment'] ?? 'Add Payment' }}
+                                            </button>
+                                        @endcan
+                                    @elseif($item->status != 4)
+                                        <span class="badge bg-success-100 text-success-600 status-badge tw-w-fit">
+                                            <iconify-icon icon="solar:check-circle-outline"></iconify-icon>
+                                            {{ $lang->data['fully_paid'] ?? 'Fully Paid' }}
+                                        </span>
+                                    @endif
                                 </div>
                             </td>
-                            <td class="">
-                                {{ $item->user->name ?? "" }}
+                            <td>
+                                @php
+                                    $createdBy = $item->user->name ?? 'Website';
+                                    $badgeClass = match($createdBy) {
+                                        'Siddhi' => 'bg-warning-100 text-warning-600',
+                                        'Sayali' => 'bg-purple-100 text-purple-600',
+                                        'Hitesh' => 'bg-info-100 text-info-600',
+                                        'Website' => 'bg-success-100 text-success-600',
+                                        default => 'bg-secondary-100 text-secondary-600'
+                                    };
+                                @endphp
+                                <span class="badge {{ $badgeClass }} status-badge">{{ $createdBy }}</span>
                             </td>
-                            <td class="text-center"> 
-                                <div class="d-flex align-items-center gap-10 justify-content-center">
+                            <td class="text-center">
+                                <div class="d-flex align-items-center tw-gap-2 justify-content-center">
                                     @can('order_view')
-                                    <a href="{{route('order.view',$item->id)}}" type="button" class="bg-success-100 text-success-600 bg-hover-success-200 fw-medium tw-size-8 d-flex justify-content-center align-items-center rounded-circle" >
-                                        <iconify-icon icon="lucide:eye" class="menu-icon"></iconify-icon>
+                                    <a href="{{route('order.view',$item->id)}}"
+                                       class="bg-success-100 text-success-600 bg-hover-success-200 fw-medium tw-size-9 d-flex justify-content-center align-items-center rounded-circle smooth-transition hover:tw-scale-110"
+                                       data-bs-toggle="tooltip"
+                                       title="View Order">
+                                        <iconify-icon icon="lucide:eye" class="tw-text-base"></iconify-icon>
                                     </a>
                                     @endcan
                                     @can('order_print')
-                                    <a href="{{route('order.print',$item->id)}}" target="_blank" class="bg-warning-100 text-warning-600 bg-hover-warning-200 fw-medium tw-size-8 d-flex justify-content-center align-items-center rounded-circle" >
-                                        <iconify-icon icon="material-symbols-light:print-outline" class="menu-icon tw-text-xl"></iconify-icon>
+                                    <a href="{{route('order.print',$item->id)}}"
+                                       target="_blank"
+                                       class="bg-warning-100 text-warning-600 bg-hover-warning-200 fw-medium tw-size-9 d-flex justify-content-center align-items-center rounded-circle smooth-transition hover:tw-scale-110"
+                                       data-bs-toggle="tooltip"
+                                       title="Print Invoice">
+                                        <iconify-icon icon="material-symbols-light:print-outline" class="tw-text-lg"></iconify-icon>
                                     </a>
                                     @endcan
                                     @can('order_edit')
-                                    <a href="{{route('orders.pos.edit',$item->id)}}" class="bg-info-100 text-info-600 bg-hover-info-200 fw-medium tw-size-8 d-flex justify-content-center align-items-center rounded-circle" >
-                                        <iconify-icon icon="lucide:edit" class="menu-icon"></iconify-icon>
+                                    <a href="{{route('orders.pos.edit',$item->id)}}"
+                                       class="bg-info-100 text-info-600 bg-hover-info-200 fw-medium tw-size-9 d-flex justify-content-center align-items-center rounded-circle smooth-transition hover:tw-scale-110"
+                                       data-bs-toggle="tooltip"
+                                       title="Edit Order">
+                                        <iconify-icon icon="lucide:edit" class="tw-text-base"></iconify-icon>
                                     </a>
                                     @endcan
                                     @can('order_delete')
-                                    <button type="button" wire:click.prevent="deleteOrder({{$item->id}})" class="remove-item-button bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium tw-size-8 d-flex justify-content-center align-items-center rounded-circle"> 
-                                        <iconify-icon icon="fluent:delete-24-regular" class="menu-icon"></iconify-icon>
+                                    <button type="button"
+                                            wire:click.prevent="deleteOrder({{$item->id}})"
+                                            class="remove-item-button bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium tw-size-9 d-flex justify-content-center align-items-center rounded-circle smooth-transition hover:tw-scale-110"
+                                            data-bs-toggle="tooltip"
+                                            title="Delete Order">
+                                        <iconify-icon icon="fluent:delete-24-regular" class="tw-text-base"></iconify-icon>
                                     </button>
                                     @endcan
                                 </div>

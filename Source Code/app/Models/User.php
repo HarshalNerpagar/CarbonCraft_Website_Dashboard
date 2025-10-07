@@ -59,7 +59,7 @@ class User extends Authenticatable
     //permissions relation
     public function permissions()
     {
-        return $this->role->permissions;
+        return $this->role ? $this->role->permissions : collect([]);
     }
 
     //roles relation

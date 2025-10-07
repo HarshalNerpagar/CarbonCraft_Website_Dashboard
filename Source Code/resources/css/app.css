@@ -1,3 +1,371 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Status Badge Colors - Force generation */
+.text-cyan-600 { color: #0891b2 !important; }
+.bg-cyan-100 { background-color: #cffafe !important; }
+.text-purple-600 { color: #9333ea !important; }
+.bg-purple-100 { background-color: #f3e8ff !important; }
+.text-blue-600 { color: #2563eb !important; }
+.bg-blue-100 { background-color: #dbeafe !important; }
+
+/* Custom Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+}
+
+/* Loading Skeleton */
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+    border-radius: 4px;
+}
+
+[data-theme="dark"] .skeleton {
+    background: linear-gradient(90deg, #2a2a2a 25%, #3a3a3a 50%, #2a2a2a 75%);
+    background-size: 1000px 100%;
+}
+
+/* Smooth Transitions */
+.smooth-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Card Hover Effects */
+.card-hover {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Fade In Animation */
+.fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Optimized Scrollbar */
+.scroll-sm::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.scroll-sm::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.scroll-sm::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.scroll-sm::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Status Badge Improvements */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.875rem;
+    font-size: 0.813rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    transition: all 0.2s ease;
+}
+
+/* Loading Spinner */
+.spinner {
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Dark Mode Enhancements */
+[data-theme="dark"] {
+    /* Card improvements */
+    .card {
+        background-color: #1a1d24 !important;
+        border-color: #2d3139 !important;
+    }
+
+    .card-hover:hover {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Table improvements */
+    table tr:hover {
+        background-color: rgba(255, 255, 255, 0.02) !important;
+    }
+
+    /* Status badges dark mode */
+    .status-badge {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Input and form fields */
+    .form-control,
+    .form-select {
+        background-color: #1a1d24;
+        border-color: #2d3139;
+        color: #e0e0e0;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        background-color: #1a1d24;
+        border-color: #4a9eff;
+        color: #e0e0e0;
+    }
+
+    /* Modal improvements */
+    .modal-content {
+        background-color: #1a1d24 !important;
+        border-color: #2d3139 !important;
+    }
+
+    /* Progress bar dark mode */
+    .tw-bg-gray-200 {
+        background-color: #2d3139 !important;
+    }
+}
+
+/* Smooth dark mode transition */
+* {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    /* Stack cards vertically on mobile */
+    .tw-grid-cols-4 {
+        grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+    }
+
+    /* Smaller text on mobile */
+    .tw-text-2xl {
+        font-size: 1.5rem !important;
+    }
+
+    .tw-text-base {
+        font-size: 0.875rem !important;
+    }
+
+    /* Compact padding */
+    .card-body {
+        padding: 1rem !important;
+    }
+
+    /* Hide less important columns on mobile tables */
+    .hide-mobile {
+        display: none !important;
+    }
+
+    /* Adjust action buttons */
+    .tw-size-9 {
+        width: 2rem !important;
+        height: 2rem !important;
+    }
+
+    /* Make status badges smaller */
+    .status-badge {
+        font-size: 0.7rem !important;
+        padding: 0.25rem 0.5rem !important;
+    }
+
+    /* Adjust icon sizes */
+    iconify-icon {
+        font-size: 1rem !important;
+    }
+}
+
+@media (max-width: 640px) {
+    /* Extra small mobile adjustments */
+    .tw-gap-4 {
+        gap: 0.75rem !important;
+    }
+
+    .tw-gap-3 {
+        gap: 0.5rem !important;
+    }
+
+    /* Touch-friendly tap targets */
+    button, a {
+        min-height: 44px;
+    }
+}
+
+/* Tablet optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .tw-grid-cols-4 {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .xl\:tw-grid-cols-3 {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+/* Pipeline & Status Cards */
+.tw-from-cyan-50 {
+    --tw-gradient-from: #ecfeff;
+    --tw-gradient-to: rgb(236 254 255 / 0);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.tw-to-cyan-100 {
+    --tw-gradient-to: #cffafe;
+}
+
+.tw-from-purple-50 {
+    --tw-gradient-from: #faf5ff;
+    --tw-gradient-to: rgb(250 245 255 / 0);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.tw-to-purple-100 {
+    --tw-gradient-to: #f3e8ff;
+}
+
+.tw-from-blue-50 {
+    --tw-gradient-from: #eff6ff;
+    --tw-gradient-to: rgb(239 246 255 / 0);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.tw-to-blue-100 {
+    --tw-gradient-to: #dbeafe;
+}
+
+.tw-from-green-50 {
+    --tw-gradient-from: #f0fdf4;
+    --tw-gradient-to: rgb(240 253 244 / 0);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.tw-to-green-100 {
+    --tw-gradient-to: #dcfce7;
+}
+
+.tw-from-orange-50 {
+    --tw-gradient-from: #fff7ed;
+    --tw-gradient-to: rgb(255 247 237 / 0);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.tw-to-orange-100 {
+    --tw-gradient-to: #ffedd5;
+}
+
+.tw-from-emerald-100 {
+    --tw-gradient-from: #d1fae5;
+}
+
+.tw-from-indigo-100 {
+    --tw-gradient-from: #e0e7ff;
+}
+
+.tw-from-amber-100 {
+    --tw-gradient-from: #fef3c7;
+}
+
+.tw-border-green-200 {
+    border-color: #bbf7d0;
+}
+
+.tw-border-blue-200 {
+    border-color: #bfdbfe;
+}
+
+.tw-border-orange-200 {
+    border-color: #fed7aa;
+}
+
+/* Space utility */
+.tw-space-y-3 > * + * {
+    margin-top: 0.75rem;
+}
+
+/* Sidebar Branding */
+.sidebar-brand-text {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.sidebar.active .sidebar-brand-text {
+    display: none;
+}
+
+.sidebar.active:hover .sidebar-brand-text {
+    display: inline-block;
+}
+
+/* Logo Icon - Always visible */
+.logo-icon-always {
+    display: inline-block !important;
+}
+
+/* Override default logo behavior to hide old logo images */
+.sidebar-logo .light-logo,
+.sidebar-logo .dark-logo,
+.sidebar-logo .logo-icon {
+    display: none !important;
+}
+
+.tw-space-y-4 > * + * {
+    margin-top: 1rem;
+}
+
+/* Border utilities */
+.tw-border-l-4 {
+    border-left-width: 4px;
+}
+
+/* Additional gradient utilities */
+.tw-bg-gradient-to-r {
+    background-image: linear-gradient(to right, var(--tw-gradient-stops));
+}
+
+.tw-from-white {
+    --tw-gradient-from: #ffffff;
+    --tw-gradient-to: rgb(255 255 255 / 0);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.tw-to-gray-50 {
+    --tw-gradient-to: #f9fafb;
+}
+
+/* Shadow utilities */
+.tw-shadow-inner {
+    box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+}
+
+/* Revenue cards hover shadow */
+.hover\:tw-shadow-xl:hover {
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+/* Group hover scale */
+.group:hover .group-hover\:tw-scale-110 {
+    transform: scale(1.1);
+}

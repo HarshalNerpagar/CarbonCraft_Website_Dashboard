@@ -14,7 +14,7 @@
                     <div class="card p-0 radius-12 overflow-hidden shadow-none">
                         <div class="card-body p-0 pb-24">
                             <div class="d-flex align-items-center gap-2 justify-content-between ps-24 pt-24 pe-24">
-                                <h6 class="text-lg fw-semibold mb-0">{{ $lang->data['pending'] ?? 'Pending' }}</h6>
+                                <h6 class="text-lg fw-semibold mb-0">{{ $lang->data['advance_done'] ?? 'Advance Done' }}</h6>
                                 <div class="d-flex align-items-center gap-3 justify-content-between mb-0">
                                 </div>
                             </div>
@@ -83,7 +83,7 @@
                     <div class="card p-0 radius-12 overflow-hidden shadow-none">
                         <div class="card-body p-0 pb-24">
                             <div class="d-flex align-items-center gap-2 justify-content-between ps-24 pt-24 pe-24">
-                                <h6 class="text-lg fw-semibold mb-0">{{ $lang->data['processing'] ?? 'Processing' }}</h6>
+                                <h6 class="text-lg fw-semibold mb-0">{{ $lang->data['design_ready'] ?? 'Design Ready' }}</h6>
                                 <div class="d-flex align-items-center gap-3 justify-content-between mb-0">
                                 </div>
                             </div>

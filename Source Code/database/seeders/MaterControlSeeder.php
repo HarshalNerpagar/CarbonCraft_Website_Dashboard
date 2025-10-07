@@ -14,17 +14,17 @@ class MaterControlSeeder extends Seeder
     {
         $settings = new MasterSettings();
         $site = $settings->siteData();
-        $site['default_currency'] = '$';
-        $site['default_application_name'] = 'Laundry Box';
-        $site['default_phone_number'] = '123456';
-        $site['default_tax_percentage'] = '1';
-        $site['default_state'] = 'kerala';
-        $site['default_city'] = 'kollam';
+        $site['default_currency'] = '₹';
+        $site['default_application_name'] = 'CarbonCraft';
+        $site['default_phone_number'] = '+91 98765 43210';
+        $site['default_tax_percentage'] = '18';
+        $site['default_state'] = 'Maharashtra';
+        $site['default_city'] = 'Mumbai';
         $site['default_country'] = 'IN';
-        $site['default_zip_code'] = '691001';
-        $site['default_address'] = 'address';
-        $site['store_email'] = 'store@store.com';
-        $site['store_tax_number'] = 'tax@tax';
+        $site['default_zip_code'] = '400001';
+        $site['default_address'] = 'CarbonCraft Studio, Mumbai, India';
+        $site['store_email'] = 'contact@carboncraft.in';
+        $site['store_tax_number'] = 'GSTIN123456789';
         $site['default_printer'] = '1';
         $site['forget_password_enable'] = 1;
         $site['country_code'] = +91;

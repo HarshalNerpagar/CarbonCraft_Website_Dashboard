@@ -280,82 +280,32 @@ class OrdersList extends Component
     }
     public function filterdata()
     {
-        if ($this->search_query || $this->search_query != '') {
-            if ($this->order_filter || $this->order_filter != '') {
-                if (Auth::user()->user_type == 1) {
-                    $orders = \App\Models\Order::where('order_number', 'like', '%' . $this->search_query . '%')
-                        ->orwhere('customer_name', 'like', '%' . $this->search_query . '%')
-                        ->orwhere('phone_number', 'like', '%' . $this->search_query . '%')
-                        ->where('status', $this->order_filter)
-                        ->orderBy('order_number','DESC')
-                        ->cursorPaginate(10, ['*'], 'cursor', Cursor::fromEncoded($this->nextCursor));
-                } else {
-                    $orders = \App\Models\Order::where('created_by', Auth::user()->id)->where('order_number', 'like', '%' . $this->search_query . '%')
-                        ->orwhere('customer_name', 'like', '%' . $this->search_query . '%')
-                        ->orwhere('phone_number', 'like', '%' . $this->search_query . '%')
-                        ->where('status', $this->order_filter)
-                        ->orderBy('order_number','DESC')
-                        ->cursorPaginate(10, ['*'], 'cursor', Cursor::fromEncoded($this->nextCursor));
-                }
-                return $orders;
-            } else {
-                if (Auth::user()->user_type == 1) {
-                    $orders = \App\Models\Order::where('order_number', 'like', '%' . $this->search_query . '%')
-                        ->orwhere('customer_name', 'like', '%' . $this->search_query . '%')
-                        ->orwhere('phone_number', 'like', '%' . $this->search_query . '%')
-                        ->orderBy('order_number','DESC')
-                        ->cursorPaginate(10, ['*'], 'cursor', Cursor::fromEncoded($this->nextCursor));
-                } else {
-                    $orders = \App\Models\Order::where('created_by', Auth::user()->id)->where('order_number', 'like', '%' . $this->search_query . '%')
-                        ->orwhere('customer_name', 'like', '%' . $this->search_query . '%')
-                        ->orwhere('phone_number', 'like', '%' . $this->search_query . '%')
-                        ->orderBy('order_number','DESC')
-                        ->cursorPaginate(10, ['*'], 'cursor', Cursor::fromEncoded($this->nextCursor));
-                }
-                return $orders;
-            }
-        } else {
-            if ($this->order_filter || $this->order_filter != '') {
+        // Build base query with eager loading to prevent N+1 queries
+        $baseQuery = \App\Models\Order::with(['user', 'customer'])
+            ->withSum('payments as paid_amount', 'received_amount')
+            ->orderBy('order_number', 'DESC');
 
-
-                if (Auth::user()->user_type == 1) {
-                    $orders = \App\Models\Order::where('status', $this->order_filter)
-                        ->orderBy('order_number','DESC')
-                        ->cursorPaginate(10, ['*'], 'cursor', Cursor::fromEncoded($this->nextCursor));
-                } else {
-                    $orders = \App\Models\Order::where('created_by', Auth::user()->id)->where('status', $this->order_filter)
-                        ->orderBy('order_number','DESC')
-                        ->cursorPaginate(10, ['*'], 'cursor', Cursor::fromEncoded($this->nextCursor));
-                }
-
-                return $orders;
-            } elseif ($this->paid_filter || $this->paid_filter != '') {
-
-
-                if (Auth::user()->user_type == 1) {
-                    $orders = \App\Models\Order::where('status', $this->order_filter)
-                        ->orderBy('order_number','DESC')
-                        ->cursorPaginate(10, ['*'], 'cursor', Cursor::fromEncoded($this->nextCursor));
-                } else {
-                    $orders = \App\Models\Order::where('created_by', Auth::user()->id)->where('status', $this->order_filter)
-                        ->orderBy('order_number','DESC')
-                        ->cursorPaginate(10, ['*'], 'cursor', Cursor::fromEncoded($this->nextCursor));
-                }
-
-                return $orders;
-            } else {
-                if (Auth::user()->user_type == 1) {
-                    $orders = \App\Models\Order::orderBy('order_number','DESC')
-                        ->cursorPaginate(10, ['*'], 'cursor', Cursor::fromEncoded($this->nextCursor));
-                } else {
-                    $orders = \App\Models\Order::where('created_by', Auth::user()->id)->orderBy('order_number','DESC')
-                        ->cursorPaginate(10, ['*'], 'cursor', Cursor::fromEncoded($this->nextCursor));
-                }
-
-
-                return $orders;
-            }
+        // Apply user type filter
+        if (Auth::user()->user_type != 1) {
+            $baseQuery->where('created_by', Auth::user()->id);
         }
+
+        // Apply search query
+        if ($this->search_query && $this->search_query != '') {
+            $baseQuery->where(function($q) {
+                $q->where('order_number', 'like', '%' . $this->search_query . '%')
+                  ->orWhere('customer_name', 'like', '%' . $this->search_query . '%')
+                  ->orWhere('phone_number', 'like', '%' . $this->search_query . '%');
+            });
+        }
+
+        // Apply status filter
+        if ($this->order_filter && $this->order_filter != '') {
+            $baseQuery->where('status', $this->order_filter);
+        }
+
+        // Execute query with cursor pagination
+        return $baseQuery->cursorPaginate(20, ['*'], 'cursor', Cursor::fromEncoded($this->nextCursor));
     }
 
     public function deleteOrder($order)

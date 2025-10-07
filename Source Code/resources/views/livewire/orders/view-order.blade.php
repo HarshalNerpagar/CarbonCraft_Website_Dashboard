@@ -24,7 +24,8 @@
                                         {{ getOrderStatus($order->status) }}
                                     </button>
                                     <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="#" wire:click.prevent="changeStatus(1)">{{ $lang->data['processing'] ?? 'Processing' }}</a></li>
+                                        <li><a class="dropdown-item" href="#" wire:click.prevent="changeStatus(0)">{{ $lang->data['advance_done'] ?? 'Advance Done' }}</a></li>
+                                        <li><a class="dropdown-item" href="#" wire:click.prevent="changeStatus(1)">{{ $lang->data['design_ready'] ?? 'Design Ready' }}</a></li>
                                         <li><a class="dropdown-item" href="#" wire:click.prevent="changeStatus(2)">{{ $lang->data['ready_to_deliver'] ?? 'Ready To Deliver' }}</a></li>
                                         <li>
                                             @if($balance > 0)
@@ -208,6 +209,89 @@
                                 </div>
                                 @endif
                             </div>
+                        </div>
+                        @endif
+                    </div>
+                    @endif
+
+                    <!-- Order Attachments (Images & Audio) -->
+                    @if($order->attachments && $order->attachments->count() > 0)
+                    <div class="mt-24 p-20 bg-primary-50 radius-8 border border-primary-600">
+                        <h6 class="mb-16 text-primary-600">
+                            <iconify-icon icon="mdi:attachment" class="text-xl"></iconify-icon>
+                            Order Attachments ({{ $order->attachments->count() }})
+                        </h6>
+
+                        @php
+                            $images = $order->attachments->where('type', 'image');
+                            $audios = $order->attachments->where('type', 'audio');
+                        @endphp
+
+                        <!-- Images -->
+                        @if($images->count() > 0)
+                        <div class="mb-20">
+                            <p class="mb-12 fw-semibold text-sm">
+                                <iconify-icon icon="mdi:image-multiple" class="text-lg"></iconify-icon>
+                                Reference Images ({{ $images->count() }})
+                            </p>
+                            <div class="row g-3">
+                                @foreach($images as $image)
+                                <div class="col-md-4 col-sm-6">
+                                    <div class="position-relative overflow-hidden radius-8 border">
+                                        <a href="{{ asset('storage/' . $image->file_path) }}" target="_blank" class="d-block">
+                                            <img src="{{ asset('storage/' . $image->file_path) }}"
+                                                 alt="{{ $image->original_name }}"
+                                                 class="w-100"
+                                                 style="height: 150px; object-fit: cover;">
+                                        </a>
+                                        <div class="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-75 text-white p-8">
+                                            <p class="mb-0 text-xs text-truncate">{{ $image->original_name }}</p>
+                                            <p class="mb-0 text-xs text-secondary-light">{{ $image->human_file_size }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-8 text-center">
+                                        <a href="{{ asset('storage/' . $image->file_path) }}"
+                                           download="{{ $image->original_name }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            <iconify-icon icon="mdi:download"></iconify-icon>
+                                            Download
+                                        </a>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- Audio Files -->
+                        @if($audios->count() > 0)
+                        <div>
+                            <p class="mb-12 fw-semibold text-sm">
+                                <iconify-icon icon="mdi:microphone" class="text-lg"></iconify-icon>
+                                Voice Requirements ({{ $audios->count() }})
+                            </p>
+                            @foreach($audios as $audio)
+                            <div class="mb-12 p-16 bg-white radius-8 border">
+                                <div class="d-flex align-items-center justify-content-between mb-12">
+                                    <div>
+                                        <p class="mb-4 fw-semibold text-sm">{{ $audio->original_name }}</p>
+                                        <p class="mb-0 text-xs text-secondary-light">
+                                            {{ $audio->human_file_size }} •
+                                            Uploaded {{ \Carbon\Carbon::parse($audio->created_at)->diffForHumans() }}
+                                        </p>
+                                    </div>
+                                    <a href="{{ asset('storage/' . $audio->file_path) }}"
+                                       download="{{ $audio->original_name }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <iconify-icon icon="mdi:download"></iconify-icon>
+                                    </a>
+                                </div>
+                                <audio controls class="w-100">
+                                    <source src="{{ asset('storage/' . $audio->file_path) }}" type="{{ $audio->mime_type }}">
+                                    Your browser does not support the audio element.
+                                </audio>
+                            </div>
+                            @endforeach
                         </div>
                         @endif
                     </div>

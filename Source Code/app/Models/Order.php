@@ -72,4 +72,10 @@ class Order extends Model
     {
         return $this->belongsTo(\App\Models\Customer::class, 'customer_id', 'id');
     }
+
+    /* attachments relation */
+    public function attachments()
+    {
+        return $this->hasMany(\App\Models\OrderAttachment::class, 'order_id', 'id');
+    }
 }

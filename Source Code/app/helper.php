@@ -125,9 +125,9 @@ function getOrderStatus($status, $preventlang = null)
             case -1:
                 return 'All Orders';
             case 0:
-                return 'Pending';
+                return 'Advance Done';
             case 1:
-                return 'Processing';
+                return 'Design Ready';
             case 2:
                 return 'Ready To Deliver';
             case 3:
@@ -140,9 +140,9 @@ function getOrderStatus($status, $preventlang = null)
             case -1:
                 return 'All Orders';
             case 0:
-                return $lang->data['pending'] ?? 'Pending';
+                return $lang->data['advance_done'] ?? 'Advance Done';
             case 1:
-                return $lang->data['processing'] ?? 'Processing';
+                return $lang->data['design_ready'] ?? 'Design Ready';
             case 2:
                 return $lang->data['ready_to_deliver'] ?? 'Ready To Deliver';
             case 3:

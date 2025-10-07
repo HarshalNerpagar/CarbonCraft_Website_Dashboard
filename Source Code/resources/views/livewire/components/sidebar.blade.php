@@ -3,10 +3,9 @@
         <iconify-icon icon="radix-icons:cross-2"></iconify-icon>
     </button>
     <div>
-        <a href="#" class="sidebar-logo">
-            <img src="/assets/images/logo.png" alt="site logo" class="light-logo">
-            <img src="/assets/images/logo-light.png" alt="site logo" class="dark-logo">
-            <img src="/assets/images/laundry_icon.png" alt="site logo" class="logo-icon">
+        <a href="#" class="sidebar-logo tw-flex tw-items-center tw-gap-3">
+            <img src="/assets/images/logo-icon.png" alt="CarbonCraft" class="logo-icon-always tw-w-10 tw-h-10">
+            <span class="sidebar-brand-text tw-text-xl tw-font-bold tw-text-gray-800 dark:tw-text-white tw-tracking-tight">CARBONCRAFT</span>
         </a>
     </div>
     <div class="sidebar-menu-area">
