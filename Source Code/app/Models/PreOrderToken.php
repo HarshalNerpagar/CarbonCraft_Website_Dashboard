@@ -33,12 +33,18 @@ class PreOrderToken extends Model
     ];
 
     /**
-     * Generate a unique token
+     * Generate a unique token (excludes ambiguous characters: I, l, O, 0, 1)
      */
     public static function generateUniqueToken(): string
     {
         do {
-            $token = Str::random(32);
+            // Use characters that are easy to distinguish
+            // Excludes: I, l, O, 0, 1 to avoid confusion
+            $characters = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            $token = '';
+            for ($i = 0; $i < 32; $i++) {
+                $token .= $characters[rand(0, strlen($characters) - 1)];
+            }
         } while (self::where('token', $token)->exists());
 
         return $token;
