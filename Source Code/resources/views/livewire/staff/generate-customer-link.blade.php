@@ -21,7 +21,7 @@
                             <div class="input-group input-group-lg">
                                 <span class="input-group-text">₹</span>
                                 <input type="number"
-                                       wire:model="total_amount"
+                                       wire:model.live="total_amount"
                                        class="form-control form-control-lg"
                                        placeholder="Enter total order amount"
                                        min="500"
@@ -40,7 +40,7 @@
                             <div class="input-group input-group-lg">
                                 <span class="input-group-text">₹</span>
                                 <input type="number"
-                                       wire:model="advance_amount"
+                                       wire:model.live="advance_amount"
                                        class="form-control form-control-lg"
                                        placeholder="1000"
                                        min="100"
@@ -56,7 +56,7 @@
                         <!-- Notes (Optional) -->
                         <div class="tw-mb-5">
                             <label class="form-label tw-font-semibold tw-text-base">Notes <small class="tw-text-gray-400">(Optional)</small></label>
-                            <textarea wire:model="notes"
+                            <textarea wire:model.live="notes"
                                       class="form-control"
                                       rows="3"
                                       placeholder="Add any special notes or requirements..."></textarea>
