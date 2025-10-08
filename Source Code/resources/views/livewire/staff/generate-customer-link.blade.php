@@ -15,63 +15,76 @@
                     </div>
 
                     <form wire:submit.prevent="generateLink">
-                        <!-- Payment Method -->
+                        <!-- Total Order Amount (Required) -->
                         <div class="tw-mb-4">
-                            <label class="form-label tw-font-semibold">Payment Method Collected</label>
-                            <div class="tw-grid tw-grid-cols-3 tw-gap-2">
-                                <label class="tw-cursor-pointer">
-                                    <input type="radio" wire:model="payment_method" value="upi" class="tw-hidden peer">
-                                    <div class="tw-border-2 tw-border-gray-200 peer-checked:tw-border-primary-600 peer-checked:tw-bg-primary-50 tw-rounded-lg tw-p-3 tw-text-center smooth-transition">
-                                        <div class="tw-text-2xl tw-mb-1">💳</div>
-                                        <div class="tw-text-sm tw-font-medium">UPI</div>
-                                    </div>
-                                </label>
-                                <label class="tw-cursor-pointer">
-                                    <input type="radio" wire:model="payment_method" value="razorpay" class="tw-hidden peer">
-                                    <div class="tw-border-2 tw-border-gray-200 peer-checked:tw-border-primary-600 peer-checked:tw-bg-primary-50 tw-rounded-lg tw-p-3 tw-text-center smooth-transition">
-                                        <div class="tw-text-2xl tw-mb-1">💎</div>
-                                        <div class="tw-text-sm tw-font-medium">Razorpay</div>
-                                    </div>
-                                </label>
-                                <label class="tw-cursor-pointer">
-                                    <input type="radio" wire:model="payment_method" value="cash" class="tw-hidden peer">
-                                    <div class="tw-border-2 tw-border-gray-200 peer-checked:tw-border-primary-600 peer-checked:tw-bg-primary-50 tw-rounded-lg tw-p-3 tw-text-center smooth-transition">
-                                        <div class="tw-text-2xl tw-mb-1">💰</div>
-                                        <div class="tw-text-sm tw-font-medium">Cash</div>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Advance Amount -->
-                        <div class="tw-mb-4">
-                            <label class="form-label tw-font-semibold">Advance Amount Collected</label>
-                            <div class="input-group">
+                            <label class="form-label tw-font-semibold tw-text-base">Total Order Amount <span class="tw-text-danger-600">*</span></label>
+                            <div class="input-group input-group-lg">
                                 <span class="input-group-text">₹</span>
-                                <input type="number" wire:model="advance_amount" class="form-control" placeholder="1000" min="100" step="100">
+                                <input type="number"
+                                       wire:model="total_amount"
+                                       class="form-control form-control-lg"
+                                       placeholder="Enter total order amount"
+                                       min="500"
+                                       step="1"
+                                       required>
                             </div>
+                            @error('total_amount')
+                                <div class="tw-text-danger-600 tw-text-sm tw-mt-1">{{ $message }}</div>
+                            @enderror
+                            <div class="tw-text-gray-500 tw-text-sm tw-mt-1">Minimum: ₹500</div>
                         </div>
 
-                        <!-- Customer Name -->
+                        <!-- Advance Payment (Default 1000) -->
                         <div class="tw-mb-4">
-                            <label class="form-label tw-font-semibold">Customer Name <small class="tw-text-gray-400">(Optional)</small></label>
-                            <input type="text" wire:model="customer_name" class="form-control" placeholder="e.g., Rahul Verma">
+                            <label class="form-label tw-font-semibold tw-text-base">Advance Payment <span class="tw-text-danger-600">*</span></label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text">₹</span>
+                                <input type="number"
+                                       wire:model="advance_amount"
+                                       class="form-control form-control-lg"
+                                       placeholder="1000"
+                                       min="100"
+                                       step="100"
+                                       required>
+                            </div>
+                            @error('advance_amount')
+                                <div class="tw-text-danger-600 tw-text-sm tw-mt-1">{{ $message }}</div>
+                            @enderror
+                            <div class="tw-text-gray-500 tw-text-sm tw-mt-1">Amount already collected from customer</div>
                         </div>
 
-                        <!-- Customer Phone -->
-                        <div class="tw-mb-4">
-                            <label class="form-label tw-font-semibold">Customer WhatsApp <small class="tw-text-gray-400">(Optional)</small></label>
-                            <input type="tel" wire:model="customer_phone" class="form-control" placeholder="+91 98765 43210">
+                        <!-- Notes (Optional) -->
+                        <div class="tw-mb-5">
+                            <label class="form-label tw-font-semibold tw-text-base">Notes <small class="tw-text-gray-400">(Optional)</small></label>
+                            <textarea wire:model="notes"
+                                      class="form-control"
+                                      rows="3"
+                                      placeholder="Add any special notes or requirements..."></textarea>
+                            @error('notes')
+                                <div class="tw-text-danger-600 tw-text-sm tw-mt-1">{{ $message }}</div>
+                            @enderror>
                         </div>
 
-                        <!-- Notes -->
-                        <div class="tw-mb-4">
-                            <label class="form-label tw-font-semibold">Notes <small class="tw-text-gray-400">(Optional)</small></label>
-                            <textarea wire:model="notes" class="form-control" rows="2" placeholder="Any notes..."></textarea>
-                        </div>
+                        <!-- Remaining Amount Display -->
+                        @if($total_amount && $advance_amount)
+                            <div class="tw-bg-info-50 tw-border tw-border-info-200 tw-rounded-lg tw-p-3 tw-mb-4">
+                                <div class="tw-flex tw-justify-between tw-items-center">
+                                    <span class="tw-text-gray-700 tw-font-medium">Remaining Amount:</span>
+                                    <span class="tw-text-lg tw-font-bold tw-text-info-600">₹{{ number_format($total_amount - $advance_amount) }}</span>
+                                </div>
+                                <div class="tw-text-xs tw-text-gray-500 tw-mt-1">To be collected on delivery</div>
+                            </div>
+                        @endif
 
                         <!-- Submit -->
-                        <button type="submit" class="btn btn-primary w-100 tw-py-3 tw-font-semibold">Generate Link</button>
+                        <button type="submit" class="btn btn-primary w-100 tw-py-3 tw-text-base tw-font-semibold">
+                            <iconify-icon icon="solar:link-circle-bold" class="tw-mr-2"></iconify-icon>
+                            Generate Customer Link
+                        </button>
+
+                        <div class="tw-text-center tw-text-sm tw-text-gray-500 tw-mt-3">
+                            Link will be valid for 48 hours
+                        </div>
                     </form>
                 </div>
             </div>
@@ -95,11 +108,25 @@
                                             @else
                                                 <span class="badge bg-danger-600">Expired</span>
                                             @endif
-                                            <span class="badge bg-gray-200 text-gray-800">{{ strtoupper($token->payment_method) }}</span>
-                                            <span class="tw-font-bold">₹{{ number_format($token->advance_amount) }}</span>
                                         </div>
-                                        <div class="tw-text-sm">{{ $token->customer_name ?? 'No name' }}</div>
-                                        <div class="tw-text-xs tw-text-gray-500 tw-mt-1">{{ $token->created_at->diffForHumans() }}</div>
+                                        <div class="tw-flex tw-gap-4 tw-text-sm tw-mb-1">
+                                            <div>
+                                                <span class="tw-text-gray-500">Total:</span>
+                                                <span class="tw-font-bold tw-text-gray-900">₹{{ number_format($token->total_amount ?? 0) }}</span>
+                                            </div>
+                                            <div>
+                                                <span class="tw-text-gray-500">Advance:</span>
+                                                <span class="tw-font-semibold tw-text-success-600">₹{{ number_format($token->advance_amount) }}</span>
+                                            </div>
+                                            <div>
+                                                <span class="tw-text-gray-500">Remaining:</span>
+                                                <span class="tw-font-semibold tw-text-warning-600">₹{{ number_format(($token->total_amount ?? 0) - $token->advance_amount) }}</span>
+                                            </div>
+                                        </div>
+                                        @if($token->notes)
+                                            <div class="tw-text-xs tw-text-gray-600 tw-italic tw-mb-1">"{{ Str::limit($token->notes, 50) }}"</div>
+                                        @endif
+                                        <div class="tw-text-xs tw-text-gray-500">{{ $token->created_at->diffForHumans() }}</div>
                                         @if($token->order)
                                             <a href="{{ route('order.view', $token->order_id) }}" class="tw-text-sm tw-text-primary-600">
                                                 Order: {{ $token->order->order_number }}

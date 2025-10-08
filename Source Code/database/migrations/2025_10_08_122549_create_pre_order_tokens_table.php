@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('token', 64)->unique(); // Unique token for URL
             $table->foreignId('agent_id')->constrained('users')->onDelete('cascade'); // Staff member who created token
             $table->string('payment_method')->default('upi'); // upi, razorpay, cash
-            $table->decimal('advance_amount', 10, 2)->default(1000.00); // Amount collected
+            $table->decimal('total_amount', 10, 2)->nullable(); // Total order amount
+            $table->decimal('advance_amount', 10, 2)->default(1000.00); // Advance amount collected
             $table->string('customer_phone')->nullable(); // Optional: Pre-fill if agent knows
             $table->string('customer_name')->nullable(); // Optional: Pre-fill if agent knows
             $table->boolean('used')->default(false); // Has customer filled the form?

@@ -43,6 +43,14 @@
                 </a>
             </li>
             @endcan
+            @can('order_create')
+            <li>
+                <a href="{{ route('staff.generate-link') }}">
+                    <iconify-icon icon="mdi:link-plus" class="menu-icon"></iconify-icon>
+                    <span>Generate Customer Link</span>
+                </a>
+            </li>
+            @endcan
             <li class="sidebar-menu-group-title">{{ $lang->data['application'] ?? 'Application' }}</li>
             @can('customer_list')
             <li class="@if(Request::is('admin/customers*')) active-page @endif">

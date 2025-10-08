@@ -11,11 +11,10 @@ use Carbon\Carbon;
 class GenerateCustomerLink extends Component
 {
     // Form fields
-    public $payment_method = 'upi';
-    public $advance_amount = 1000;
-    public $customer_phone = '';
-    public $customer_name = '';
-    public $notes = '';
+    public $total_amount = '';  // Total order amount (required)
+    public $advance_amount = 1000;  // Advance payment (default 1000)
+    public $payment_method = 'upi';  // Hidden field
+    public $notes = '';  // Optional notes
 
     // Generated data
     public $generatedUrl = '';
@@ -44,12 +43,23 @@ class GenerateCustomerLink extends Component
     {
         // Validate
         $this->validate([
-            'payment_method' => 'required|in:upi,razorpay,cash',
+            'total_amount' => 'required|numeric|min:500|max:500000',
             'advance_amount' => 'required|numeric|min:100|max:100000',
-            'customer_phone' => 'nullable|string|max:15',
-            'customer_name' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:1000',
+        ], [
+            'total_amount.required' => 'Total order amount is required',
+            'total_amount.min' => 'Total amount must be at least ₹500',
+            'advance_amount.min' => 'Advance amount must be at least ₹100',
         ]);
+
+        // Validate advance is not more than total
+        if ($this->advance_amount > $this->total_amount) {
+            $this->dispatch('alert', [
+                'type' => 'error',
+                'message' => 'Advance amount cannot be greater than total amount'
+            ]);
+            return;
+        }
 
         try {
             // Generate unique token
@@ -61,21 +71,23 @@ class GenerateCustomerLink extends Component
                 'agent_id' => Auth::id(),
                 'payment_method' => $this->payment_method,
                 'advance_amount' => $this->advance_amount,
-                'customer_phone' => $this->customer_phone,
-                'customer_name' => $this->customer_name,
+                'total_amount' => $this->total_amount,
+                'customer_phone' => null,
+                'customer_name' => null,
                 'notes' => $this->notes,
                 'expires_at' => Carbon::now()->addHours(48),
             ]);
 
             // Generate URL
-            $this->generatedUrl = env('WEBSITE_URL', 'http://localhost:4321') . '/order/' . $token;
+            $this->generatedUrl = env('WEBSITE_URL', 'http://localhost:3000') . '/order/' . $token;
             $this->showSuccessModal = true;
 
             // Reload tokens
             $this->loadTokens();
 
             // Reset form
-            $this->reset(['customer_phone', 'customer_name', 'notes']);
+            $this->reset(['total_amount', 'notes']);
+            $this->advance_amount = 1000; // Reset to default
 
             $this->dispatch('alert', [
                 'type' => 'success',
