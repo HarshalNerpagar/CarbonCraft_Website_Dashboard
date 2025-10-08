@@ -10,6 +10,14 @@
 .text-blue-600 { color: #2563eb !important; }
 .bg-blue-100 { background-color: #dbeafe !important; }
 
+/* Created By Badge Colors */
+.text-blue-700 { color: #1d4ed8 !important; }
+.bg-blue-50 { background-color: #eff6ff !important; }
+.border-blue-200 { border-color: #bfdbfe !important; }
+.text-amber-700 { color: #b45309 !important; }
+.bg-amber-50 { background-color: #fffbeb !important; }
+.border-amber-200 { border-color: #fde68a !important; }
+
 /* Custom Animations */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }

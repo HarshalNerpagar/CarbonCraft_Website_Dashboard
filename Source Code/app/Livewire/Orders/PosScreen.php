@@ -95,9 +95,18 @@ class PosScreen extends Component
     public function editItem($row){
         $this->add($this->inputi);
         $service = Service::whereId($row->service_id)->first();
-        $servicedetails = ServiceDetail::where('service_id', $service->id)->first();
+
+        if (!$service) {
+            return;
+        }
+
         $serviceType = ServiceType::where('service_type_name',$row->service_name)->first();
-        $servicedetail = $servicedetails->where('service_type_id', $serviceType?->id)->where('service_id', $service->id)->first();
+
+        // Fix: Query ServiceDetail collection, not a single record
+        $servicedetail = ServiceDetail::where('service_id', $service->id)
+            ->where('service_type_id', $serviceType?->id)
+            ->first();
+
         if ($servicedetail) {
             $this->selservices[$this->inputi]['service'] = $service->id;
             $this->selservices[$this->inputi]['service_type']  = $serviceType?->id;

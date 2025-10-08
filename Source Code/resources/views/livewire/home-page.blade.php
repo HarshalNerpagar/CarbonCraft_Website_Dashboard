@@ -102,7 +102,8 @@
         </div>
     </div>
 
-    <!-- Revenue & Performance Section -->
+    <!-- Revenue & Performance Section (Admin Only) -->
+    @if(Auth::user()->user_type == 1)
     <div class="tw-grid 2xl:tw-grid-cols-3 tw-gap-4 lg:tw-grid-cols-1 tw-grid-cols-1 fade-in" style="animation-delay: 0.2s;">
         <!-- Revenue Summary Card -->
         <div class="2xl:tw-col-span-2">
@@ -263,6 +264,7 @@
             </div>
         </div>
     </div>
+    @endif
 
     <div class="row gy-4 mt-1">
         <div class="col-xxl-9 col-xl-12">

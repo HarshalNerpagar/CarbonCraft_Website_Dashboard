@@ -17,6 +17,23 @@ class ViewOrder extends Component
 {
     public $order,$orderdetails,$orderaddons,$lang,$balance,$total,$customer,$payments,$sitename,$address,$phone,$paid_amount,$payment_type,$zipcode,$tax_number,$store_email,$notes;
     public $current_delivery_date;
+
+    /* Helper method: Check if user can see all orders */
+    private function canSeeAllOrders()
+    {
+        // Admin users (user_type == 1) can see all orders
+        if (Auth::user()->user_type == 1) {
+            return true;
+        }
+
+        // Order Management role users can see all orders
+        if (Auth::user()->role && Auth::user()->role->name === 'Order Management') {
+            return true;
+        }
+
+        return false;
+    }
+
     #[Title('View Order')]
     public function render()
     {
@@ -29,17 +46,18 @@ class ViewOrder extends Component
         if(!\Illuminate\Support\Facades\Gate::allows('order_view')){
             abort(404);
         }
-        if(Auth::user()->user_type==1)
-        {  $this->order = Order::where('id',$id)->first();
-            if($this->order) {
-                $this->current_delivery_date = \Carbon\Carbon::parse($this->order->delivery_date)->toDateString();
-            }
+
+        // Load order - Admin and Order Management see all, others see only their own
+        if($this->canSeeAllOrders()) {
+            $this->order = Order::where('id',$id)->first();
         } else {
             $this->order = Order::where('created_by',Auth::user()->id)->where('id',$id)->first();
-            if($this->order) {
-                $this->current_delivery_date = \Carbon\Carbon::parse($this->order->delivery_date)->toDateString();
-                }
         }
+
+        if($this->order) {
+            $this->current_delivery_date = \Carbon\Carbon::parse($this->order->delivery_date)->toDateString();
+        }
+
         if(!$this->order)
         {
             abort(404);

@@ -34,14 +34,14 @@
                             <td>
                                 <div class="tw-flex tw-flex-col tw-gap-1">
                                     <div class="tw-flex tw-items-center tw-gap-2">
-                                        <iconify-icon icon="mdi:receipt-text-outline" class="tw-text-primary tw-text-base"></iconify-icon>
-                                        <span class="tw-font-bold text-primary tw-text-sm">{{ $item->order_number }}</span>
+                                        <iconify-icon icon="mdi:receipt-text-outline" class="tw-text-gray-600 tw-text-base"></iconify-icon>
+                                        <span class="tw-font-bold tw-text-gray-800 tw-text-sm">{{ $item->order_number }}</span>
                                     </div>
-                                    <div class="tw-flex tw-items-center tw-gap-2 tw-text-neutral-600">
+                                    <div class="tw-flex tw-items-center tw-gap-2 tw-text-gray-600">
                                         <iconify-icon icon="solar:calendar-outline" class="tw-text-xs"></iconify-icon>
                                         <span class="tw-text-xs">{{ \Carbon\Carbon::parse($item->order_date)->format('d/m/y') }}</span>
                                     </div>
-                                    <div class="tw-flex tw-items-center tw-gap-2 tw-text-neutral-600">
+                                    <div class="tw-flex tw-items-center tw-gap-2 tw-text-gray-600">
                                         <iconify-icon icon="solar:delivery-outline" class="tw-text-xs"></iconify-icon>
                                         <span class="tw-text-xs">{{ \Carbon\Carbon::parse($item->delivery_date)->format('d/m/y') }}</span>
                                     </div>
@@ -60,61 +60,76 @@
                                     @endif
                                 </div>
                             </td>
-                            <td class="text-primary">
-                                <span class="tw-font-bold tw-text-base">{{ getFormattedCurrency($item->total) }}</span>
+                            <td>
+                                <span class="tw-font-bold tw-text-gray-800 tw-text-base">{{ getFormattedCurrency($item->total) }}</span>
                             </td>
                             <td>
                                 @php
                                     $statusConfig = match($item->status) {
-                                        0 => ['text' => $lang->data['advance_done'] ?? 'Advance Done', 'class' => 'text-cyan-600 bg-cyan-100', 'icon' => 'solar:cart-check-outline'],
-                                        1 => ['text' => $lang->data['design_ready'] ?? 'Design Ready', 'class' => 'text-purple-600 bg-purple-100', 'icon' => 'solar:document-text-outline'],
-                                        2 => ['text' => $lang->data['ready_to_deliver'] ?? 'Ready To Deliver', 'class' => 'text-blue-600 bg-blue-100', 'icon' => 'solar:box-outline'],
-                                        3 => ['text' => $lang->data['delivered'] ?? 'Delivered Orders', 'class' => 'text-success-600 bg-success-100', 'icon' => 'solar:check-circle-outline'],
-                                        4 => ['text' => $lang->data['returned'] ?? 'Returned', 'class' => 'text-danger-600 bg-danger-100', 'icon' => 'solar:close-circle-outline'],
-                                        default => ['text' => 'Unknown', 'class' => 'text-gray-600 bg-gray-100', 'icon' => 'solar:question-circle-outline']
+                                        0 => ['text' => $lang->data['advance_done'] ?? 'Advance Done', 'step' => '1/4', 'progress' => 25],
+                                        1 => ['text' => $lang->data['design_ready'] ?? 'Design Ready', 'step' => '2/4', 'progress' => 50],
+                                        2 => ['text' => $lang->data['ready_to_deliver'] ?? 'Ready To Deliver', 'step' => '3/4', 'progress' => 75],
+                                        3 => ['text' => $lang->data['delivered'] ?? 'Delivered Orders', 'step' => '4/4', 'progress' => 100],
+                                        4 => ['text' => $lang->data['returned'] ?? 'Returned', 'step' => 'X', 'progress' => 0],
+                                        default => ['text' => 'Unknown', 'step' => '?', 'progress' => 0]
                                     };
                                 @endphp
-                                <span class="badge {{ $statusConfig['class'] }} status-badge tw-flex tw-items-center tw-gap-1 tw-w-fit">
-                                    <iconify-icon icon="{{ $statusConfig['icon'] }}" class="tw-text-sm"></iconify-icon>
-                                    {{ $statusConfig['text'] }}
-                                </span>
+                                <div class="tw-flex tw-flex-col tw-gap-1.5">
+                                    <div class="tw-flex tw-items-center tw-justify-between tw-gap-2">
+                                        <span class="tw-text-xs tw-font-semibold tw-text-gray-700">{{ $statusConfig['text'] }}</span>
+                                        <span class="tw-text-xs tw-font-bold tw-text-gray-500 tw-bg-gray-100 tw-px-2 tw-py-0.5 tw-rounded">{{ $statusConfig['step'] }}</span>
+                                    </div>
+                                    @if($item->status != 4)
+                                    <div class="tw-w-full tw-h-1 tw-bg-gray-200 tw-rounded-full tw-overflow-hidden">
+                                        <div class="tw-h-full tw-bg-gray-800 smooth-transition" style="width: {{ $statusConfig['progress'] }}%"></div>
+                                    </div>
+                                    @else
+                                    <span class="tw-text-xs tw-text-red-600 tw-font-medium">✕ Cancelled</span>
+                                    @endif
+                                </div>
                             </td>
                             <td>
                                 @php
                                 // Use preloaded payment sum to avoid N+1 queries
                                 $paidamount = $item->paid_amount ?? 0;
+                                $balance = $item->total - $paidamount;
                                 $paymentPercentage = $item->total > 0 ? ($paidamount / $item->total) * 100 : 0;
+                                $isFullyPaid = $balance <= 0;
                                 @endphp
                                 <div class="tw-flex tw-flex-col tw-gap-2">
-                                    <div class="tw-flex tw-items-center tw-justify-between tw-gap-2">
-                                        <span class="tw-text-xs tw-text-gray-600">Paid:</span>
-                                        <span class="tw-font-bold tw-text-sm text-success-600">{{ getFormattedCurrency($paidamount) }}</span>
-                                    </div>
-                                    <div class="tw-flex tw-items-center tw-justify-between tw-gap-2">
-                                        <span class="tw-text-xs tw-text-gray-600">Balance:</span>
-                                        <span class="tw-font-bold tw-text-sm text-danger-600">{{ getFormattedCurrency($item->total - $paidamount) }}</span>
+                                    <!-- Payment amounts in compact format -->
+                                    <div class="tw-text-xs">
+                                        <div class="tw-flex tw-items-center tw-justify-between">
+                                            <span class="tw-text-gray-500">Paid</span>
+                                            <span class="tw-font-bold tw-text-gray-800">{{ getFormattedCurrency($paidamount) }}</span>
+                                        </div>
+                                        @if(!$isFullyPaid)
+                                        <div class="tw-flex tw-items-center tw-justify-between tw-mt-1">
+                                            <span class="tw-text-gray-500">Due</span>
+                                            <span class="tw-font-bold tw-text-gray-800">{{ getFormattedCurrency($balance) }}</span>
+                                        </div>
+                                        @endif
                                     </div>
 
-                                    <!-- Payment Progress Bar -->
-                                    <div class="tw-w-full tw-h-1.5 tw-bg-gray-200 tw-rounded-full tw-overflow-hidden">
-                                        <div class="tw-h-full tw-bg-success-600 smooth-transition" style="width: {{ $paymentPercentage }}%"></div>
+                                    <!-- Single line progress bar -->
+                                    <div class="tw-w-full tw-h-1 tw-bg-gray-200 tw-rounded-full tw-overflow-hidden">
+                                        <div class="tw-h-full tw-bg-gray-800 smooth-transition" style="width: {{ $paymentPercentage }}%"></div>
                                     </div>
 
-                                    @if ($paidamount < $item->total && $item->status != 4)
+                                    <!-- Action button or status -->
+                                    @if (!$isFullyPaid && $item->status != 4)
                                         @can('payment_create')
                                             <button type="button"
-                                                    class="btn btn-sm rounded-pill btn-success-100 text-success-600 radius-8 tw-text-xs tw-py-1 tw-px-3 smooth-transition hover:tw-scale-105"
+                                                    class="tw-text-xs tw-font-medium tw-text-gray-700 tw-bg-gray-100 hover:tw-bg-gray-200 tw-px-3 tw-py-1.5 tw-rounded smooth-transition"
                                                     data-bs-toggle="modal"
                                                     data-bs-target="#exampleModal"
                                                     wire:click="payment({{ $item->id }})">
-                                                <iconify-icon icon="solar:wallet-money-outline" class="tw-mr-1"></iconify-icon>
-                                                {{ $lang->data['add_payment'] ?? 'Add Payment' }}
+                                                + Add Payment
                                             </button>
                                         @endcan
                                     @elseif($item->status != 4)
-                                        <span class="badge bg-success-100 text-success-600 status-badge tw-w-fit">
-                                            <iconify-icon icon="solar:check-circle-outline"></iconify-icon>
-                                            {{ $lang->data['fully_paid'] ?? 'Fully Paid' }}
+                                        <span class="tw-text-xs tw-font-medium tw-text-gray-600 tw-bg-gray-100 tw-px-2 tw-py-1 tw-rounded tw-w-fit">
+                                            ✓ Paid
                                         </span>
                                     @endif
                                 </div>
@@ -122,21 +137,17 @@
                             <td>
                                 @php
                                     $createdBy = $item->user->name ?? 'Website';
-                                    $badgeClass = match($createdBy) {
-                                        'Siddhi' => 'bg-warning-100 text-warning-600',
-                                        'Sayali' => 'bg-purple-100 text-purple-600',
-                                        'Hitesh' => 'bg-info-100 text-info-600',
-                                        'Website' => 'bg-success-100 text-success-600',
-                                        default => 'bg-secondary-100 text-secondary-600'
-                                    };
+                                    $badgeStyle = $createdBy === 'Website'
+                                        ? 'tw-text-blue-700 tw-bg-blue-50 tw-border tw-border-blue-200'
+                                        : 'tw-text-amber-700 tw-bg-amber-50 tw-border tw-border-amber-200';
                                 @endphp
-                                <span class="badge {{ $badgeClass }} status-badge">{{ $createdBy }}</span>
+                                <span class="tw-text-xs tw-font-medium tw-px-2.5 tw-py-1 tw-rounded tw-inline-block {{ $badgeStyle }}">{{ $createdBy }}</span>
                             </td>
                             <td class="text-center">
                                 <div class="d-flex align-items-center tw-gap-2 justify-content-center">
                                     @can('order_view')
                                     <a href="{{route('order.view',$item->id)}}"
-                                       class="bg-success-100 text-success-600 bg-hover-success-200 fw-medium tw-size-9 d-flex justify-content-center align-items-center rounded-circle smooth-transition hover:tw-scale-110"
+                                       class="tw-bg-gray-100 tw-text-gray-700 hover:tw-bg-gray-800 hover:tw-text-white fw-medium tw-size-9 d-flex justify-content-center align-items-center rounded-circle smooth-transition"
                                        data-bs-toggle="tooltip"
                                        title="View Order">
                                         <iconify-icon icon="lucide:eye" class="tw-text-base"></iconify-icon>
@@ -145,7 +156,7 @@
                                     @can('order_print')
                                     <a href="{{route('order.print',$item->id)}}"
                                        target="_blank"
-                                       class="bg-warning-100 text-warning-600 bg-hover-warning-200 fw-medium tw-size-9 d-flex justify-content-center align-items-center rounded-circle smooth-transition hover:tw-scale-110"
+                                       class="tw-bg-gray-100 tw-text-gray-700 hover:tw-bg-gray-800 hover:tw-text-white fw-medium tw-size-9 d-flex justify-content-center align-items-center rounded-circle smooth-transition"
                                        data-bs-toggle="tooltip"
                                        title="Print Invoice">
                                         <iconify-icon icon="material-symbols-light:print-outline" class="tw-text-lg"></iconify-icon>
@@ -153,7 +164,7 @@
                                     @endcan
                                     @can('order_edit')
                                     <a href="{{route('orders.pos.edit',$item->id)}}"
-                                       class="bg-info-100 text-info-600 bg-hover-info-200 fw-medium tw-size-9 d-flex justify-content-center align-items-center rounded-circle smooth-transition hover:tw-scale-110"
+                                       class="tw-bg-gray-100 tw-text-gray-700 hover:tw-bg-gray-800 hover:tw-text-white fw-medium tw-size-9 d-flex justify-content-center align-items-center rounded-circle smooth-transition"
                                        data-bs-toggle="tooltip"
                                        title="Edit Order">
                                         <iconify-icon icon="lucide:edit" class="tw-text-base"></iconify-icon>
@@ -162,7 +173,7 @@
                                     @can('order_delete')
                                     <button type="button"
                                             wire:click.prevent="deleteOrder({{$item->id}})"
-                                            class="remove-item-button bg-danger-focus bg-hover-danger-200 text-danger-600 fw-medium tw-size-9 d-flex justify-content-center align-items-center rounded-circle smooth-transition hover:tw-scale-110"
+                                            class="remove-item-button tw-bg-gray-100 tw-text-gray-700 hover:tw-bg-red-600 hover:tw-text-white fw-medium tw-size-9 d-flex justify-content-center align-items-center rounded-circle smooth-transition"
                                             data-bs-toggle="tooltip"
                                             title="Delete Order">
                                         <iconify-icon icon="fluent:delete-24-regular" class="tw-text-base"></iconify-icon>

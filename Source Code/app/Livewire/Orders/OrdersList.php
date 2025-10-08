@@ -32,6 +32,22 @@ class OrdersList extends Component
         return view('livewire.orders.orders-list');
     }
 
+    /* Helper method: Check if user can see all orders */
+    private function canSeeAllOrders()
+    {
+        // Admin users (user_type == 1) can see all orders
+        if (Auth::user()->user_type == 1) {
+            return true;
+        }
+
+        // Order Management role users can see all orders
+        if (Auth::user()->role && Auth::user()->role->name === 'Order Management') {
+            return true;
+        }
+
+        return false;
+    }
+
     /* process before render */
     public function mount()
     {
@@ -53,7 +69,7 @@ class OrdersList extends Component
     {
 
         // $this->reloadOrders();
-        if (Auth::user()->user_type == 1) {
+        if ($this->canSeeAllOrders()) {
             $ordersQuery =  \App\Models\Order::orderBy('order_number','DESC');
         } else {
             $ordersQuery =  \App\Models\Order::where('created_by', Auth::user()->id);
@@ -285,8 +301,8 @@ class OrdersList extends Component
             ->withSum('payments as paid_amount', 'received_amount')
             ->orderBy('order_number', 'DESC');
 
-        // Apply user type filter
-        if (Auth::user()->user_type != 1) {
+        // Apply user access filter - Admin and Order Management see all, others see only their own
+        if (!$this->canSeeAllOrders()) {
             $baseQuery->where('created_by', Auth::user()->id);
         }
 

@@ -12,18 +12,35 @@ use Illuminate\Support\Facades\Auth;
 class OrderStatusScreen extends Component
 {
     public $orders, $pending_orders, $processing_orders, $ready_orders, $lang,$dateFilter='all';
+
+    /* Helper method: Check if user can see all orders */
+    private function canSeeAllOrders()
+    {
+        // Admin users (user_type == 1) can see all orders
+        if (Auth::user()->user_type == 1) {
+            return true;
+        }
+
+        // Order Management role users can see all orders
+        if (Auth::user()->role && Auth::user()->role->name === 'Order Management') {
+            return true;
+        }
+
+        return false;
+    }
+
     #[Title('Order Status Screen')]
     public function render()
     {
         $pending_orders = Order::where('status', 0)->with('user')->latest();
         $processing_orders = Order::where('status', 1)->with('user')->latest();
         $ready_orders = Order::where('status', 2)->with('user')->latest();
-        if (Auth::user()->user_type == 1) {
-           // Admin sees all orders
-        } else {
-            $pending_orders->where('created_by', Auth::user()->id)->where('status', 0);
-            $processing_orders->where('created_by', Auth::user()->id)->where('status', 1);
-            $ready_orders->where('created_by', Auth::user()->id)->where('status', 2);
+
+        // Filter by user if they don't have permission to see all orders
+        if (!$this->canSeeAllOrders()) {
+            $pending_orders->where('created_by', Auth::user()->id);
+            $processing_orders->where('created_by', Auth::user()->id);
+            $ready_orders->where('created_by', Auth::user()->id);
         }
 
         switch($this->dateFilter){
