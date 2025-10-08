@@ -147,8 +147,11 @@ class PreOrderTokenController extends Controller
             }
 
             $customer = Customer::updateOrCreate(
-                ['phone_number' => $request->whatsapp_number],
-                ['name' => $request->customer_name]
+                ['phone' => $request->whatsapp_number],
+                [
+                    'name' => $request->customer_name,
+                    'is_active' => 1
+                ]
             );
 
             $pricing = $this->calculatePricing($request->product_type, $request->service, $request->needs_pickup ?? false);
