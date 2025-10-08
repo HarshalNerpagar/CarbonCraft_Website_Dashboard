@@ -98,9 +98,12 @@ class PreOrderTokenController extends Controller
                 'success' => true,
                 'token' => [
                     'payment_method' => $preOrderToken->payment_method,
+                    'total_amount' => $preOrderToken->total_amount,
                     'advance_amount' => $preOrderToken->advance_amount,
+                    'remaining_amount' => ($preOrderToken->total_amount ?? 0) - $preOrderToken->advance_amount,
                     'customer_phone' => $preOrderToken->customer_phone,
                     'customer_name' => $preOrderToken->customer_name,
+                    'notes' => $preOrderToken->notes,
                     'agent_name' => $preOrderToken->agent->name ?? 'CarbonCraft Support',
                     'expires_at' => $preOrderToken->expires_at->format('Y-m-d H:i:s'),
                 ]
@@ -154,7 +157,11 @@ class PreOrderTokenController extends Controller
                 ]
             );
 
-            $pricing = $this->calculatePricing($request->product_type, $request->service, $request->needs_pickup ?? false);
+            // Use total_amount from token instead of calculating from product
+            $totalAmount = $preOrderToken->total_amount ?? 2899; // Fallback to default if not set
+            $pickupCharge = ($request->needs_pickup ?? false) ? 350 : 0;
+            $subTotal = $totalAmount - $pickupCharge;
+
             $orderNumber = $this->generateOrderNumber();
             $deliveryDate = $request->service === 'diy' ? Carbon::now()->addDays(5) : Carbon::now()->addDays(12);
 
@@ -165,11 +172,11 @@ class PreOrderTokenController extends Controller
                 'phone_number' => $request->whatsapp_number,
                 'order_date' => now(),
                 'delivery_date' => $deliveryDate,
-                'sub_total' => $pricing['sub_total'],
-                'addon_total' => $pricing['pickup_charge'],
-                'total' => $pricing['total'],
-                'note' => $this->formatOrderNote($request),
-                'status' => 0,
+                'sub_total' => $subTotal,
+                'addon_total' => $pickupCharge,
+                'total' => $totalAmount,
+                'note' => $this->formatOrderNote($request, $preOrderToken->notes),
+                'status' => 0, // Advance Done
                 'order_type' => 'online',
                 'created_by' => $preOrderToken->agent_id,
                 'financial_year_id' => 1
@@ -192,9 +199,9 @@ class PreOrderTokenController extends Controller
             return response()->json([
                 'success' => true,
                 'order_number' => $order->order_number,
-                'total_amount' => $pricing['total'],
+                'total_amount' => $totalAmount,
                 'paid_amount' => $preOrderToken->advance_amount,
-                'remaining_amount' => $pricing['total'] - $preOrderToken->advance_amount,
+                'remaining_amount' => $totalAmount - $preOrderToken->advance_amount,
                 'delivery_date' => $deliveryDate->format('d M Y'),
             ]);
         } catch (\Exception $e) {
@@ -236,12 +243,23 @@ class PreOrderTokenController extends Controller
         return 'CC-' . $year . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
     }
 
-    private function formatOrderNote($request)
+    private function formatOrderNote($request, $agentNotes = null)
     {
         $note = "Product: {$request->product_type}\nDesign: {$request->design_name}\nService: {$request->service}\n";
         $note .= "Color: {$request->selected_color}\nName Position: {$request->name_position}\n";
-        if ($request->requirements) $note .= "\nRequirements:\n{$request->requirements}";
-        if ($request->needs_pickup) $note .= "\n\n✓ Pickup Service (+₹350)";
+
+        if ($agentNotes) {
+            $note .= "\n--- Agent Notes ---\n{$agentNotes}\n";
+        }
+
+        if ($request->requirements) {
+            $note .= "\n--- Customer Requirements ---\n{$request->requirements}";
+        }
+
+        if ($request->needs_pickup) {
+            $note .= "\n\n✓ Pickup Service (+₹350)";
+        }
+
         return $note;
     }
 }
