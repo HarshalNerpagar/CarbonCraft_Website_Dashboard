@@ -1,0 +1,99 @@
+name: 🚀 Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+
+  workflow_dispatch:  # Allow manual trigger from GitHub Actions tab
+
+jobs:
+  deploy:
+    name: 🌐 Deploy Laravel Dashboard to cPanel
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🔍 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2  # Fetch last 2 commits for better diff
+
+      - name: 🔑 Setup SSH Connection
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.CPANEL_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.CPANEL_HOST }} >> ~/.ssh/known_hosts
+          echo "SSH connection configured successfully"
+
+      - name: 📝 Display Commit Information
+        run: |
+          echo "================================================"
+          echo "🚀 Deploying CarbonCraft Dashboard"
+          echo "================================================"
+          echo "Branch: ${GITHUB_REF#refs/heads/}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+          echo "Message: ${{ github.event.head_commit.message }}"
+          echo "================================================"
+
+      - name: 📦 Push to cPanel Git Repository
+        run: |
+          # Configure Git
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+          # Add cPanel repository as remote (if not exists)
+          git remote remove cpanel 2>/dev/null || true
+          git remote add cpanel ssh://${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }}:${{ secrets.CPANEL_PORT || 22 }}${{ secrets.CPANEL_REPO_PATH }}
+
+          # Push to cPanel repository
+          git push cpanel main --force
+
+          echo "✅ Code pushed to cPanel repository"
+
+      - name: 🚀 Execute Deployment Script on cPanel
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+              -p ${{ secrets.CPANEL_PORT || 22 }} \
+              ${{ secrets.CPANEL_USER }}@${{ secrets.CPANEL_HOST }} << 'ENDSSH'
+
+          echo "================================================"
+          echo "🔧 Running deployment script on cPanel..."
+          echo "================================================"
+
+          # Make deployment script executable
+          chmod +x /home/harshaln/deploy-to-cpanel.sh
+
+          # Run deployment script
+          bash /home/harshaln/deploy-to-cpanel.sh
+
+          echo "================================================"
+          echo "✅ Deployment completed successfully!"
+          echo "================================================"
+
+          ENDSSH
+
+      - name: 📊 Deployment Summary
+        if: success()
+        run: |
+          echo "================================================"
+          echo "✅ DEPLOYMENT SUCCESSFUL"
+          echo "================================================"
+          echo "🌐 Dashboard URL: https://harshal-nerpagar.store/dashboard"
+          echo "📅 Deployed at: $(date)"
+          echo "🔖 Version: ${{ github.sha }}"
+          echo "================================================"
+
+      - name: ❌ Deployment Failed
+        if: failure()
+        run: |
+          echo "================================================"
+          echo "❌ DEPLOYMENT FAILED"
+          echo "================================================"
+          echo "Please check the logs above for error details"
+          echo "You can manually trigger the deployment again"
+          echo "================================================"
