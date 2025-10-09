@@ -15,6 +15,7 @@ class PreOrderToken extends Model
         'token',
         'agent_id',
         'payment_method',
+        'total_amount',  // ✅ ADDED - This was missing!
         'advance_amount',
         'customer_phone',
         'customer_name',
@@ -26,6 +27,7 @@ class PreOrderToken extends Model
     ];
 
     protected $casts = [
+        'total_amount' => 'decimal:2',  // ✅ ADDED - Cast to decimal
         'advance_amount' => 'decimal:2',
         'used' => 'boolean',
         'expires_at' => 'datetime',

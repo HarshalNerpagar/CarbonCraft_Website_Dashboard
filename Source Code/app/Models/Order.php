@@ -41,6 +41,8 @@ class Order extends Model
         'order_date' => 'datetime',
         'delivery_date' => 'datetime',
         'needs_pickup' => 'boolean',
+        'status' => 'integer',
+        'order_type' => 'integer',
     ];
 
     /* user relation */

@@ -127,12 +127,13 @@ class PreOrderTokenController extends Controller
             'customer_name' => 'required|string|max:255',
             'whatsapp_number' => 'required|string|max:15',
             'service' => 'required|in:diy,full-service',
-            'product_type' => 'required|in:metal,plastic,tap-pay',
-            'design_name' => 'required|string',
+            'product_type' => 'nullable|in:metal,plastic,tap-pay', // Made optional for pre-order tokens
+            'design_name' => 'nullable|string', // Made optional for pre-order tokens
             'selected_color' => 'required|string',
             'name_position' => 'required|in:front,back',
             'requirements' => 'nullable|string|max:2000',
             'needs_pickup' => 'boolean',
+            'attachment_ids' => 'nullable|array', // Added for file attachments
         ]);
 
         if ($validator->fails()) {
@@ -177,9 +178,23 @@ class PreOrderTokenController extends Controller
                 'total' => $totalAmount,
                 'note' => $this->formatOrderNote($request, $preOrderToken->notes),
                 'status' => 0, // Advance Done
-                'order_type' => 'online',
+                'order_type' => 1, // ✅ FIXED: 1=online (was string 'online')
+                'order_source' => 'customer_link', // Track source
+                'order_channel' => 'dashboard_token', // Track channel
                 'created_by' => $preOrderToken->agent_id,
                 'financial_year_id' => 1
+            ]);
+
+            // Create order details
+            $serviceId = $request->service === 'diy' ? 1 : 2; // 1 = DIY, 2 = Full Service
+            \App\Models\OrderDetail::create([
+                'order_id' => $order->id,
+                'service_id' => $serviceId,
+                'service_name' => $request->service === 'diy' ? 'Metal Card - DIY Service' : 'Metal Card - Full Service',
+                'service_price' => $subTotal,
+                'service_quantity' => '1',
+                'service_detail_total' => $subTotal,
+                'color_code' => $request->selected_color . ' | Name Position: ' . $request->name_position
             ]);
 
             Payment::create([
@@ -194,10 +209,28 @@ class PreOrderTokenController extends Controller
                 'financial_year_id' => 1
             ]);
 
+            // Save attachments if provided
+            if ($request->has('attachment_ids') && is_array($request->attachment_ids)) {
+                foreach ($request->attachment_ids as $attachmentId) {
+                    try {
+                        // Update the attachment with order_id
+                        \DB::table('order_attachments')
+                            ->where('id', $attachmentId)
+                            ->update(['order_id' => $order->id]);
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to link attachment: ' . $e->getMessage());
+                    }
+                }
+            }
+
             $preOrderToken->markAsUsed($order->id);
+
+            // Send Telegram notification (non-blocking)
+            $this->sendTelegramNotification($order, $request, $preOrderToken);
 
             return response()->json([
                 'success' => true,
+                'order_id' => $order->id,
                 'order_number' => $order->order_number,
                 'total_amount' => $totalAmount,
                 'paid_amount' => $preOrderToken->advance_amount,
@@ -237,10 +270,33 @@ class PreOrderTokenController extends Controller
 
     private function generateOrderNumber()
     {
-        $year = Carbon::now()->year;
-        $lastOrder = Order::whereYear('order_date', $year)->orderBy('order_number', 'desc')->first();
-        $nextNumber = ($lastOrder && preg_match('/CC-\d{4}-(\d{4})/', $lastOrder->order_number, $m)) ? intval($m[1]) + 1 : 1;
-        return 'CC-' . $year . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        // New Format: CC-YYMM-NNNN
+        // Example: CC-2510-0001 (Oct 2025, Order #1)
+        // Length: 13 characters (professional & concise)
+
+        $year = date('y');   // 25 (last 2 digits)
+        $month = date('m');  // 10
+
+        // Get last order number for current month
+        $yearMonth = date('Y-m');
+        $lastOrder = Order::where('order_number', 'like', "CC-{$year}{$month}-%")
+                          ->orderBy('id', 'desc')
+                          ->first();
+
+        // Extract sequential number or start at 1
+        if ($lastOrder && preg_match('/CC-\d{4}-(\d{4})/', $lastOrder->order_number, $matches)) {
+            $number = intval($matches[1]) + 1;
+        } else {
+            $number = 1;
+        }
+
+        // Format: CC-YYMM-NNNN
+        return sprintf(
+            'CC-%s%s-%s',
+            $year,
+            $month,
+            str_pad($number, 4, '0', STR_PAD_LEFT)
+        );
     }
 
     private function formatOrderNote($request, $agentNotes = null)
@@ -261,5 +317,48 @@ class PreOrderTokenController extends Controller
         }
 
         return $note;
+    }
+
+    private function sendTelegramNotification($order, $request, $preOrderToken)
+    {
+        try {
+            $telegramUrl = env('BACKEND_API_URL', 'http://localhost:5001') . '/api/payment-success/notify';
+
+            $data = [
+                'customerName' => $request->customer_name,
+                'whatsappNumber' => $request->whatsapp_number,
+                'service' => $request->service,
+                'selectedColor' => $request->selected_color,
+                'namePosition' => $request->name_position,
+                'requirements' => $request->requirements ?? '',
+                'orderId' => $order->order_number,
+                'advanceAmount' => $preOrderToken->advance_amount,
+                'totalAmount' => $preOrderToken->total_amount ?? 0,
+                'remainingAmount' => ($preOrderToken->total_amount ?? 0) - $preOrderToken->advance_amount,
+                'agentNotes' => $preOrderToken->notes ?? '',
+                'timestamp' => now()->timestamp,
+            ];
+
+            // Send non-blocking request
+            $ch = curl_init($telegramUrl);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5); // 5 second timeout
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200) {
+                \Log::info('Telegram notification sent successfully for order: ' . $order->order_number);
+            } else {
+                \Log::warning('Telegram notification failed with status: ' . $httpCode);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Telegram notification error: ' . $e->getMessage());
+            // Don't throw - this is non-critical
+        }
     }
 }

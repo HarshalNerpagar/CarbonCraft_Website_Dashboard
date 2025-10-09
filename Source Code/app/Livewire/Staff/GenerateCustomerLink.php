@@ -16,6 +16,21 @@ class GenerateCustomerLink extends Component
     public $payment_method = 'upi';  // Hidden field
     public $notes = '';  // Optional notes
 
+    // Computed property for real-time display
+    public function getRemainingAmountProperty()
+    {
+        if ($this->total_amount && $this->advance_amount) {
+            return floatval($this->total_amount) - floatval($this->advance_amount);
+        }
+        return 0;
+    }
+
+    // Add method to get total amount as float
+    public function getTotalAmountFloat()
+    {
+        return $this->total_amount ? floatval($this->total_amount) : null;
+    }
+
     // Generated data
     public $generatedUrl = '';
     public $showSuccessModal = false;
@@ -65,17 +80,32 @@ class GenerateCustomerLink extends Component
             // Generate unique token
             $token = PreOrderToken::generateUniqueToken();
 
+            // DEBUG: Log the values
+            \Log::info('Creating token with values:', [
+                'total_amount_raw' => $this->total_amount,
+                'total_amount_float' => floatval($this->total_amount),
+                'advance_amount_raw' => $this->advance_amount,
+                'advance_amount_float' => floatval($this->advance_amount),
+            ]);
+
             // Create token record
-            PreOrderToken::create([
+            $tokenRecord = PreOrderToken::create([
                 'token' => $token,
                 'agent_id' => Auth::id(),
                 'payment_method' => $this->payment_method,
-                'advance_amount' => $this->advance_amount,
-                'total_amount' => $this->total_amount,
+                'advance_amount' => floatval($this->advance_amount),
+                'total_amount' => floatval($this->total_amount),
                 'customer_phone' => null,
                 'customer_name' => null,
                 'notes' => $this->notes,
                 'expires_at' => Carbon::now()->addHours(48),
+            ]);
+
+            // DEBUG: Log what was saved
+            \Log::info('Token created in database:', [
+                'id' => $tokenRecord->id,
+                'total_amount' => $tokenRecord->total_amount,
+                'advance_amount' => $tokenRecord->advance_amount,
             ]);
 
             // Generate URL

@@ -333,10 +333,38 @@
                                                     4 => ['text' => $lang->data['returned'] ?? 'Returned', 'class' => 'bg-danger-100 text-danger-600'],
                                                     default => ['text' => 'Unknown', 'class' => 'bg-gray-200 text-gray-600']
                                                 };
+
+                                                // Extract service type from customization_data or note
+                                                $service = null;
+                                                if ($item->customization_data) {
+                                                    $customData = json_decode($item->customization_data, true);
+                                                    $service = $customData['service'] ?? null;
+                                                }
+                                                // Fallback: check note field
+                                                if (!$service && $item->note) {
+                                                    if (stripos($item->note, 'DIY') !== false || stripos($item->note, 'diy') !== false) {
+                                                        $service = 'diy';
+                                                    } elseif (stripos($item->note, 'Full Service') !== false || stripos($item->note, 'full-service') !== false) {
+                                                        $service = 'full-service';
+                                                    }
+                                                }
+
+                                                $serviceBadge = match($service) {
+                                                    'diy' => ['text' => 'DIY', 'class' => 'bg-amber-100 text-amber-700', 'icon' => 'solar:palette-2-linear'],
+                                                    'full-service' => ['text' => 'Full Service', 'class' => 'bg-emerald-100 text-emerald-700', 'icon' => 'solar:star-shine-linear'],
+                                                    default => null
+                                                };
                                             @endphp
                                             <span class="badge {{ $statusBadge['class'] }} status-badge">
                                                 {{ $statusBadge['text'] }}
                                             </span>
+
+                                            @if($serviceBadge)
+                                                <span class="badge {{ $serviceBadge['class'] }} status-badge tw-flex tw-items-center tw-gap-1">
+                                                    <iconify-icon icon="{{ $serviceBadge['icon'] }}" class="tw-text-sm"></iconify-icon>
+                                                    {{ $serviceBadge['text'] }}
+                                                </span>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>

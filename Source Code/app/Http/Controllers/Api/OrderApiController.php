@@ -200,38 +200,32 @@ class OrderApiController extends Controller
 
     private function generateOrderNumber()
     {
-        // Format: CC-[day]-[month]-[year]-[order_number]-[4_random_letters]
-        // Example: CC-07-10-2025-0012-ABCD
+        // New Format: CC-YYMMNNNNN
+        // Example: CC-2510-0001 (Oct 2025, Order #1)
+        // Length: 13 characters (professional & concise)
 
-        $day = date('d');    // 07
+        $year = date('y');   // 25 (last 2 digits)
         $month = date('m');  // 10
-        $year = date('Y');   // 2025
 
-        // Get last order number for today
-        $today = date('Y-m-d');
-        $lastOrder = Order::whereDate('created_at', $today)->orderBy('id', 'desc')->first();
+        // Get last order number for current month
+        $yearMonth = date('Y-m');
+        $lastOrder = Order::where('order_number', 'like', "CC-{$year}{$month}-%")
+                          ->orderBy('id', 'desc')
+                          ->first();
 
-        // Extract order number from last order or start at 1
-        if ($lastOrder) {
-            // Order format: CC-07-10-2025-0012-ABCD
-            // Extract the number part (0012)
-            $parts = explode('-', $lastOrder->order_number);
-            $number = isset($parts[4]) ? intval($parts[4]) + 1 : 1;
+        // Extract sequential number or start at 1
+        if ($lastOrder && preg_match('/CC-\d{4}-(\d{4})/', $lastOrder->order_number, $matches)) {
+            $number = intval($matches[1]) + 1;
         } else {
             $number = 1;
         }
 
-        // Generate 4 random uppercase letters
-        $randomLetters = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 0, 4));
-
-        // Format: CC-DD-MM-YYYY-NNNN-XXXX
+        // Format: CC-YYMM-NNNN
         return sprintf(
-            'CC-%s-%s-%s-%s-%s',
-            $day,
-            $month,
+            'CC-%s%s-%s',
             $year,
-            str_pad($number, 4, '0', STR_PAD_LEFT),
-            $randomLetters
+            $month,
+            str_pad($number, 4, '0', STR_PAD_LEFT)
         );
     }
 }

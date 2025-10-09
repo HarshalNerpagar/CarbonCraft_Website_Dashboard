@@ -35,18 +35,34 @@ class HomePage extends Component
     /* process before mount */
     public function mount()
     {
+        $currentUser = auth()->user();
+        $isStaff = $currentUser->user_type == 2 &&
+                   $currentUser->role &&
+                   !in_array($currentUser->role->name, ['Admin', 'Order Management']);
+
         // Optimized: Single query instead of 5 separate queries
-        $statusCounts = Order::selectRaw('status, COUNT(*) as count')
-            ->whereIn('status', [0, 1, 2, 3, 4])
-            ->groupBy('status')
-            ->pluck('count', 'status');
+        $statusQuery = Order::selectRaw('status, COUNT(*) as count')
+            ->whereIn('status', [0, 1, 2, 3, 4]);
+
+        // If staff, only show their orders
+        if ($isStaff) {
+            $statusQuery->where('created_by', $currentUser->id);
+        }
+
+        $statusCounts = $statusQuery->groupBy('status')->pluck('count', 'status');
 
         $this->pending_count = $statusCounts[0] ?? 0;
         $this->processing_count = $statusCounts[1] ?? 0;
         $this->ready_count = $statusCounts[2] ?? 0;
         $this->delivered_count = $statusCounts[3] ?? 0;
         $returned_count = $statusCounts[4] ?? 0;
-        $this->orders = Order::whereDate('order_date',\Carbon\Carbon::today()->toDateString())->with('user')->latest()->get();
+
+        // Filter orders by role
+        $ordersQuery = Order::whereDate('order_date',\Carbon\Carbon::today()->toDateString())->with('user');
+        if ($isStaff) {
+            $ordersQuery->where('created_by', $currentUser->id);
+        }
+        $this->orders = $ordersQuery->latest()->get();
 
         // Calculate revenues
         $this->calculateRevenues();
@@ -74,12 +90,24 @@ class HomePage extends Component
     /* calculate payment overview */
     private function calculatePaymentOverview()
     {
+        $currentUser = auth()->user();
+        $isStaff = $currentUser->user_type == 2 &&
+                   $currentUser->role &&
+                   !in_array($currentUser->role->name, ['Admin', 'Order Management']);
+
         // Get all orders total (excluding returned orders)
-        $this->total_order_amount = Order::whereIn('status', [0, 1, 2, 3])
-            ->sum('total');
+        $orderQuery = Order::whereIn('status', [0, 1, 2, 3]);
+        if ($isStaff) {
+            $orderQuery->where('created_by', $currentUser->id);
+        }
+        $this->total_order_amount = $orderQuery->sum('total');
 
         // Get total paid amount
-        $this->total_paid_amount = Payment::sum('received_amount');
+        $paymentQuery = Payment::query();
+        if ($isStaff) {
+            $paymentQuery->where('created_by', $currentUser->id);
+        }
+        $this->total_paid_amount = $paymentQuery->sum('received_amount');
 
         // Calculate unpaid amount
         $this->total_unpaid_amount = $this->total_order_amount - $this->total_paid_amount;
@@ -144,29 +172,38 @@ class HomePage extends Component
     /* process while update the element */
     public function updated($name,$value)
     {
+        $currentUser = auth()->user();
+        $isStaff = $currentUser->user_type == 2 &&
+                   $currentUser->role &&
+                   !in_array($currentUser->role->name, ['Admin', 'Order Management']);
+
         /*if the updated element is search_query and value is not empty */
         if($name == 'search_query' && $value != '')
         {
             if($this->order_filter == '')
             {
-                $this->orders = \App\Models\Order::whereDate('order_date',\Carbon\Carbon::today()->toDateString())
+                $query = \App\Models\Order::whereDate('order_date',\Carbon\Carbon::today()->toDateString())
                                             ->where(function($q) use ($value) {
                                                 $q->where('order_number','like','%'.$value.'%')
                                                     ->orwhere('customer_name','like','%'.$value.'%');
                                                 })
-                                            ->with('user')
-                                            ->latest()
-                                            ->get();
+                                            ->with('user');
+                if ($isStaff) {
+                    $query->where('created_by', $currentUser->id);
+                }
+                $this->orders = $query->latest()->get();
             }
             else{
-                $this->orders = \App\Models\Order::where('status',$this->order_filter)
+                $query = \App\Models\Order::where('status',$this->order_filter)
                                             ->whereDate('order_date',\Carbon\Carbon::today()->toDateString())
                                             ->where(function($q) use ($value) {
                                                 $q->where('order_number','like','%'.$value.'%')
                                                 ->orwhere('customer_name','like','%'.$value.'%');
-                                            })
-                                            ->latest()
-                                            ->get();
+                                            });
+                if ($isStaff) {
+                    $query->where('created_by', $currentUser->id);
+                }
+                $this->orders = $query->latest()->get();
             }
         }
         elseif($name == 'search_query' && $value == '')
@@ -174,12 +211,19 @@ class HomePage extends Component
             /* if the updated element is search_query and value is empty */
             if($this->order_filter == '')
             {  /* if the order filter value is empty */
-                $this->orders = \App\Models\Order::whereDate('order_date',\Carbon\Carbon::today()->toDateString())->with('user')->latest()->get();
+                $query = \App\Models\Order::whereDate('order_date',\Carbon\Carbon::today()->toDateString())->with('user');
+                if ($isStaff) {
+                    $query->where('created_by', $currentUser->id);
+                }
+                $this->orders = $query->latest()->get();
             }
             else{
                 /* if the order filter value is not empty */
-                $this->orders = \App\Models\Order::whereDate('order_date',\Carbon\Carbon::today()->toDateString())->where('status',$this->order_filter)->with('user')->latest()->get();
-
+                $query = \App\Models\Order::whereDate('order_date',\Carbon\Carbon::today()->toDateString())->where('status',$this->order_filter)->with('user');
+                if ($isStaff) {
+                    $query->where('created_by', $currentUser->id);
+                }
+                $this->orders = $query->latest()->get();
             }
         }
         /* if the updated value is order filter */
@@ -188,11 +232,19 @@ class HomePage extends Component
             $this->search_query = '';
             if($value == '')
             {    /* if the order filter value is empty */
-                $this->orders = \App\Models\Order::whereDate('order_date',\Carbon\Carbon::today()->toDateString())->with('user')->latest()->get();
+                $query = \App\Models\Order::whereDate('order_date',\Carbon\Carbon::today()->toDateString())->with('user');
+                if ($isStaff) {
+                    $query->where('created_by', $currentUser->id);
+                }
+                $this->orders = $query->latest()->get();
             }
             else{
                 /* if the order filter value is not empty */
-                $this->orders = \App\Models\Order::whereDate('order_date',\Carbon\Carbon::today()->toDateString())->where('status',$value)->with('user')->latest()->get();
+                $query = \App\Models\Order::whereDate('order_date',\Carbon\Carbon::today()->toDateString())->where('status',$value)->with('user');
+                if ($isStaff) {
+                    $query->where('created_by', $currentUser->id);
+                }
+                $this->orders = $query->latest()->get();
             }
         }
     }

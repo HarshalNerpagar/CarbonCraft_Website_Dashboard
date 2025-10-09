@@ -19,7 +19,14 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => env('APP_ENV') === 'production'
+        ? [
+            'https://carboncraft.in',
+            'https://www.carboncraft.in',
+            'https://dashboard.carboncraft.in',
+            'https://api.carboncraft.in'
+          ]
+        : ['*'],
 
     'allowed_origins_patterns' => [],
 
@@ -29,6 +36,6 @@ return [
 
     'max_age' => 0,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];

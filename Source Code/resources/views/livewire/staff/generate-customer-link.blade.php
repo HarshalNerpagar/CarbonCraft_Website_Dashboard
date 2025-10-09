@@ -66,13 +66,13 @@
                         </div>
 
                         <!-- Remaining Amount Display -->
-                        @if($total_amount && $advance_amount)
-                            <div class="tw-bg-info-50 tw-border tw-border-info-200 tw-rounded-lg tw-p-3 tw-mb-4">
+                        @if($total_amount)
+                            <div class="tw-bg-gradient-to-r tw-from-blue-50 tw-to-indigo-50 tw-border tw-border-blue-200 tw-rounded-lg tw-p-4 tw-mb-4">
                                 <div class="tw-flex tw-justify-between tw-items-center">
-                                    <span class="tw-text-gray-700 tw-font-medium">Remaining Amount:</span>
-                                    <span class="tw-text-lg tw-font-bold tw-text-info-600">₹{{ number_format($total_amount - $advance_amount) }}</span>
+                                    <span class="tw-text-gray-700 tw-font-semibold">Remaining Amount:</span>
+                                    <span class="tw-text-2xl tw-font-bold tw-text-blue-600">₹{{ number_format($this->remainingAmount) }}</span>
                                 </div>
-                                <div class="tw-text-xs tw-text-gray-500 tw-mt-1">To be collected on delivery</div>
+                                <div class="tw-text-xs tw-text-gray-600 tw-mt-1">💰 To be collected before delivery</div>
                             </div>
                         @endif
 
